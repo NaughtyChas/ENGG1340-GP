@@ -61,6 +61,7 @@ jobs:
       run: |
         # Run with timeout in case it's waiting for input
         timeout 5s ${{github.workspace}}/game || code=$?
+        code=${code:-$?}
         if [ $code -eq 124 ]; then
           # Timeout is actually success here (means program was running)
           echo "√ Executable runs properly (timed out as expected for interactive program)"
