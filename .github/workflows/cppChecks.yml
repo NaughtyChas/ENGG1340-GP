@@ -1,0 +1,120 @@
+name: C++ Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev
+    
+    - name: Build with Make
+      run: make
+      
+    - name: Verify executable exists
+      run: |
+        if [ -f "game" ]; then
+          echo "√ Build successful - executable created"
+        else
+          echo "× Build failed - no executable found"
+          exit 1
+        fi
+        
+    - name: Upload executable for testing
+      uses: actions/upload-artifact@v3
+      with:
+        name: game-executable
+        path: game
+        retention-days: 7
+        
+  run-test:
+    name: Executable Run Test
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Install ncurses runtime
+      run: sudo apt-get update && sudo apt-get install -y libncurses5 libncursesw5
+    
+    - name: Download executable
+      uses: actions/download-artifact@v3
+      with:
+        name: game-executable
+        path: ${{github.workspace}}
+        
+    - name: Make executable
+      run: chmod +x ${{github.workspace}}/game
+      
+    - name: Check if executable runs
+      run: |
+        # Run with timeout in case it's waiting for input
+        timeout 5s ${{github.workspace}}/game || code=$?
+        if [ $code -eq 124 ]; then
+          # Timeout is actually success here (means program was running)
+          echo "√ Executable runs properly (timed out as expected for interactive program)"
+          exit 0
+        elif [ $code -eq 0 ]; then
+          echo "√ Executable runs and exits normally"
+          exit 0
+        else
+          echo "× Executable failed to run with exit code $code"
+          exit 1
+        fi
+    
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy cppcheck
+    
+    - name: Install ncurses development files
+      run: sudo apt-get install -y libncurses5-dev libncursesw5-dev
+      
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=warning,performance,portability --suppress=missingIncludeSystem --error-exitcode=1 --language=c++ src/
+    
+    - name: Check code formatting
+      uses: jidicula/clang-format-action@v4.11.0
+      with:
+        clang-format-version: '13'
+        check-path: 'src'
+        
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run CodeQL analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: cpp
+    
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y libncurses5-dev libncursesw5-dev
+        
+    - name: Build project for analysis
+      run: make
+        
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
