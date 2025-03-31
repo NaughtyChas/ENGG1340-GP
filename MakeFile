@@ -1,0 +1,28 @@
+CXX = g++
+CXXFLAGS = -std=c++14
+LDFLAGS = -lncurses
+
+# Directories
+BIN_DIR = bin
+BUILD_DIR = build
+SRC_DIR = src
+INCLUDE_DIR = include
+
+TARGET = $(BIN_DIR)/main
+
+OBJS = $(BUILD_DIR)/main.o
+
+SRCS = $(SRC_DIR)/main.cpp
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CXX) $(OBJS) -o $(TARGET) $(LDFLAGS)
+
+$(BUILD_DIR)/main.o: $(SRC_DIR)/main.cpp $(INCLUDE_DIR)/game.h
+	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/main.cpp -o $(BUILD_DIR)/main.o
+
+clean:
+	rm -rf $(BUILD_DIR)/*.o $(TARGET)
+
+.PHONY: all clean directories
