@@ -1,0 +1,11 @@
+# Set ncurses installation path
+NCURSES_PATH=~/local
+
+# Install ncurses if not already installed
+install-ncurses:
+    chmod +x install_ncurses.sh
+    ./install_ncurses.sh
+
+# Add ncurses to the library path
+CFLAGS += -I$(NCURSES_PATH)/include
+LDFLAGS += -L$(NCURSES_PATH)/lib -lncurses
