@@ -32,7 +32,8 @@ void Game::displayMenu() {
         if (i == menuHighlight) {
             wattron(mainWindow, A_REVERSE);
         }
-        mvwprintw(mainWindow, height / 2 - menuItems.size() / 2 + i, width / 2 - menuItems[i].length() / 2, menuItems[i].c_str());
+        mvwprintw(mainWindow, height / 2 - menuItems.size() / 2 + i,
+                 width / 2 - menuItems[i].length() / 2, menuItems[i].c_str());
         wattroff(mainWindow, A_REVERSE);
     }
 
