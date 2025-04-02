@@ -25,7 +25,7 @@ jobs:
       
     - name: Verify executable exists
       run: |
-        if [ -f "game" ]; then
+        if [ -f "bin/main" ]; then
           echo "√ Build successful - executable created"
         else
           echo "× Build failed - no executable found"
@@ -36,7 +36,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: game-executable
-        path: game
+        path: bin/main
         retention-days: 7
         
   run-test:
@@ -52,15 +52,15 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: game-executable
-        path: ${{github.workspace}}
+        path: ${{github.workspace}}/bin
         
     - name: Make executable
-      run: chmod +x ${{github.workspace}}/game
+      run: chmod +x ${{github.workspace}}/bin/main
       
     - name: Check if executable runs
       run: |
         # Run with timeout in case it's waiting for input
-        timeout 5s ${{github.workspace}}/game || code=$?
+        timeout 5s ${{github.workspace}}/bin/main || code=$?
         code=${code:-$?}
         if [ $code -eq 124 ]; then
           # Timeout is actually success here (means program was running)
