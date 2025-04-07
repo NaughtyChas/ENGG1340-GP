@@ -18,7 +18,7 @@ OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/game.o $(BUILD_DIR)/startGame.o
 
 SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/game.cpp $(SRC_DIR)/startGame.cpp
 
-all: directories $(TARGET)
+all: install-ncurses directories $(TARGET)
 
 # Install ncurses if not already installed
 install-ncurses:
