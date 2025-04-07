@@ -32,7 +32,7 @@
 *.app
 
 # User-specific stuff for IntelliJ IDEs
-.idea/*
+.idea/
 .idea/**/workspace.xml
 .idea/**/tasks.xml
 .idea/**/usage.statistics.xml
@@ -85,7 +85,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 # vscode ================================
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
@@ -129,6 +129,7 @@ fabric.properties
 # CMake ================================
 bin/
 build/
+CMakeLists.txt
 CMakeLists.txt.user
 CMakeCache.txt
 CMakeFiles
@@ -138,3 +139,7 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+
+# Using ncurse on Windows:
+
+ncursesw/
