@@ -22,21 +22,9 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-pdcurses
+          mingw-w64-x86_64-ncurses  # 尝试使用ncurses而非pdcurses
           make
           
-    - name: Create ncurses compatibility layer
-      shell: msys2 {0}
-      run: |
-        echo '#include <pdcurses/curses.h>' > /mingw64/include/ncurses.h
-        echo '// PDCurses compatibility layer for ncurses' >> /mingw64/include/ncurses.h
-        
-        echo '#include <pdcurses/curses.h>' > include/ncurses.h
-        echo '// PDCurses compatibility layer for ncurses' >> include/ncurses.h
-        
-        echo "Created ncurses.h with content:"
-        cat /mingw64/include/ncurses.h
-    
     - name: Create build directories
       shell: msys2 {0}
       run: mkdir -p bin build
@@ -44,14 +32,17 @@ jobs:
     - name: Build application
       shell: msys2 {0}
       run: |
+        # 不修改库，保持使用ncurses
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
-        sed -i 's/-lncurses/-lpdcurses/g' Makefile
         
+        # 添加适当的调试信息
+        echo "===== PDCurses/NCurses库信息 ====="
+        pacman -Qi mingw-w64-x86_64-ncurses
+        ls -la /mingw64/bin/*curses*
+        echo "=================================="
+        
+        # 设置编译环境并构建
         export CXXFLAGS="-I/mingw64/include"
-        
-        echo "===== ENVIRONMENT ====="
-        env | grep -i path
-        echo "======================="
         make
       
     - name: Package executable with dependencies
@@ -59,7 +50,8 @@ jobs:
       run: |
         mkdir -p package
         cp bin/main.exe package/game.exe
-        cp /mingw64/bin/libpdcurses.dll package/
+        # 复制ncurses库文件而非pdcurses
+        cp /mingw64/bin/libncurses*.dll package/
         cp /mingw64/bin/libgcc_s_seh-1.dll package/
         cp /mingw64/bin/libstdc++-6.dll package/
         cp /mingw64/bin/libwinpthread-1.dll package/
