@@ -23,7 +23,7 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-pdcurses
-          mingw-w64-x86_64-make
+          make
           
     - name: Create ncurses compatibility layer
       shell: msys2 {0}
