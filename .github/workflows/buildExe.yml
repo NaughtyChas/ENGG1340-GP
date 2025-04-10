@@ -25,6 +25,32 @@ jobs:
           mingw-w64-x86_64-ncurses
           make
           
+    - name: Find ncurses headers and create compatibility layer
+      shell: msys2 {0}
+      run: |
+        echo "Finding ncurses.h..."
+        NCURSES_HEADERS=$(find /mingw64 -name "ncurses.h" 2>/dev/null || find /mingw64 -path "*ncurses*/curses.h" 2>/dev/null)
+        
+        if [ -z "$NCURSES_HEADERS" ]; then
+          echo "Can't find header file, creating intermediate..."
+          echo '#ifndef NCURSES_H_INCLUDED' > /mingw64/include/ncurses.h
+          echo '#define NCURSES_H_INCLUDED' >> /mingw64/include/ncurses.h
+          echo '#include <curses.h>' >> /mingw64/include/ncurses.h
+          echo '#endif' >> /mingw64/include/ncurses.h
+          
+          echo '#ifndef NCURSES_H_INCLUDED' > include/ncurses.h
+          echo '#define NCURSES_H_INCLUDED' >> include/ncurses.h
+          echo '#include <curses.h>' >> include/ncurses.h
+          echo '#endif' >> include/ncurses.h
+        else
+          echo "Found: $NCURSES_HEADERS"
+        fi
+          
+        echo "====== System directory ======"
+        ls -la /mingw64/include/curses*
+        ls -la /mingw64/include/ncurses*
+        echo "======================="
+    
     - name: Create build directories
       shell: msys2 {0}
       run: mkdir -p bin build
@@ -34,23 +60,27 @@ jobs:
       run: |
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
         
-        echo "===== PDCurses/NCurses ====="
-        pacman -Qi mingw-w64-x86_64-ncurses
-        ls -la /mingw64/bin/*curses*
-        echo "=================================="
+        export CXXFLAGS="-I/mingw64/include/ncursesw -I/mingw64/include"
         
-        export CXXFLAGS="-I/mingw64/include"
-        make
+        echo "curses:"
+        find /mingw64 -name "*curses*.h" | sort
+        
+        sed -i 's/-lncurses/-lncursesw/g' Makefile
+        
+        make VERBOSE=1
       
     - name: Package executable with dependencies
       shell: msys2 {0}
       run: |
         mkdir -p package
         cp bin/main.exe package/game.exe
-        cp /mingw64/bin/libncurses*.dll package/
+        cp /mingw64/bin/libncursesw*.dll package/
         cp /mingw64/bin/libgcc_s_seh-1.dll package/
         cp /mingw64/bin/libstdc++-6.dll package/
         cp /mingw64/bin/libwinpthread-1.dll package/
+        
+        cp /mingw64/bin/libiconv*.dll package/
+        cp /mingw64/bin/libintl*.dll package/
     
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
