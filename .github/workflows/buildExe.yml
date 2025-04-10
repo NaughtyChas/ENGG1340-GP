@@ -25,19 +25,17 @@ jobs:
           mingw-w64-x86_64-pdcurses
           make
           
-    - name: Locate PDCurses and create compatibility layer
+    - name: Create ncurses compatibility layer
       shell: msys2 {0}
       run: |
-        # Locate PDCurses header file first
-        CURSES_PATH=$(find /mingw64 -name "curses.h" | head -1)
-        echo "Found curses.h at: $CURSES_PATH"
+        echo '#include <pdcurses/curses.h>' > /mingw64/include/ncurses.h
+        echo '// PDCurses compatibility layer for ncurses' >> /mingw64/include/ncurses.h
         
-        CURSES_DIR=$(dirname "$CURSES_PATH")
-        echo "#include \"$CURSES_PATH\"" > /mingw64/include/ncurses.h
+        echo '#include <pdcurses/curses.h>' > include/ncurses.h
+        echo '// PDCurses compatibility layer for ncurses' >> include/ncurses.h
         
-        mkdir -p include/compat
-        cp "$CURSES_PATH" include/compat/
-        echo "#include \"../compat/curses.h\"" > include/ncurses.h
+        echo "Created ncurses.h with content:"
+        cat /mingw64/include/ncurses.h
     
     - name: Create build directories
       shell: msys2 {0}
@@ -48,16 +46,12 @@ jobs:
       run: |
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
         sed -i 's/-lncurses/-lpdcurses/g' Makefile
-        sed -i 's/CXXFLAGS = -std=c++14/CXXFLAGS = -std=c++14 -I\/mingw64\/include\/pdcurses/g' Makefile
         
-        # 显示所有可用的头文件位置
-        echo "======= AVAILABLE INCLUDE PATHS ======="
-        find /mingw64/include -name "*curses*.h"
-        echo "======================================"
+        export CXXFLAGS="-I/mingw64/include"
         
-        # 添加更多诊断信息
-        export CXXFLAGS="-v"
-        
+        echo "===== ENVIRONMENT ====="
+        env | grep -i path
+        echo "======================="
         make
       
     - name: Package executable with dependencies
