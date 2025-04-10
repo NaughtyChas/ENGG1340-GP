@@ -29,26 +29,36 @@ jobs:
       shell: msys2 {0}
       run: |
         echo "Finding ncurses.h..."
-        NCURSES_HEADERS=$(find /mingw64 -name "ncurses.h" 2>/dev/null || find /mingw64 -path "*ncurses*/curses.h" 2>/dev/null)
+        NCURSES_HEADERS=$(find /mingw64 -name "ncurses.h" 2>/dev/null)
+        echo "Found ncurses.h files: $NCURSES_HEADERS"
         
-        if [ -z "$NCURSES_HEADERS" ]; then
-          echo "Can't find header file, creating intermediate..."
-          echo '#ifndef NCURSES_H_INCLUDED' > /mingw64/include/ncurses.h
-          echo '#define NCURSES_H_INCLUDED' >> /mingw64/include/ncurses.h
-          echo '#include <curses.h>' >> /mingw64/include/ncurses.h
-          echo '#endif' >> /mingw64/include/ncurses.h
-          
-          echo '#ifndef NCURSES_H_INCLUDED' > include/ncurses.h
-          echo '#define NCURSES_H_INCLUDED' >> include/ncurses.h
-          echo '#include <curses.h>' >> include/ncurses.h
-          echo '#endif' >> include/ncurses.h
+        CURSES_HEADERS=$(find /mingw64 -name "curses.h" 2>/dev/null)
+        echo "Found curses.h files: $CURSES_HEADERS"
+        
+        if [ -n "$NCURSES_HEADERS" ]; then
+          echo "Using system ncurses.h: $NCURSES_HEADERS"
+          NCURSES_DIR=$(dirname $(echo "$NCURSES_HEADERS" | head -1))
+          echo "Using directory: $NCURSES_DIR"
         else
-          echo "Found: $NCURSES_HEADERS"
+          if [ -n "$CURSES_HEADERS" ]; then
+            CURSES_PATH=$(echo "$CURSES_HEADERS" | head -1)
+            echo "Found curses.h, creating ncurses.h wrapper..."
+            echo '#ifndef NCURSES_H_INCLUDED' > include/ncurses.h
+            echo '#define NCURSES_H_INCLUDED' >> include/ncurses.h
+            echo "#include \"$CURSES_PATH\"" >> include/ncurses.h
+            echo '#endif' >> include/ncurses.h
+          else
+            echo "No curses.h or ncurses.h found, creating generic wrapper..."
+            echo '#ifndef NCURSES_H_INCLUDED' > include/ncurses.h
+            echo '#define NCURSES_H_INCLUDED' >> include/ncurses.h
+            echo '#include <ncursesw/curses.h>' >> include/ncurses.h
+            echo '#endif' >> include/ncurses.h
+          fi
         fi
-          
-        echo "====== System directory ======"
-        ls -la /mingw64/include/curses*
-        ls -la /mingw64/include/ncurses*
+        
+        echo "====== System Directory Info ======"
+        ls -la /mingw64/include/ncurses* 2>/dev/null || echo "No ncurses* in include dir"
+        ls -la /mingw64/include/ncursesw* 2>/dev/null || echo "No ncursesw* in include dir"
         echo "======================="
     
     - name: Create build directories
@@ -60,12 +70,21 @@ jobs:
       run: |
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
         
-        export CXXFLAGS="-I/mingw64/include/ncursesw -I/mingw64/include"
+        export CXXFLAGS="-I/mingw64/include/ncursesw -I/mingw64/include/ncurses -I/mingw64/include"
         
-        echo "curses:"
+        echo "Curses-related files in system:"
         find /mingw64 -name "*curses*.h" | sort
         
-        sed -i 's/-lncurses/-lncursesw/g' Makefile
+        if [ -f "/mingw64/lib/libncurses.dll.a" ]; then
+          sed -i 's/-lncurses/-lncurses/g' Makefile
+        elif [ -f "/mingw64/lib/libncursesw.dll.a" ]; then
+          sed -i 's/-lncurses/-lncursesw/g' Makefile
+        elif [ -f "/mingw64/lib/libpdcurses.a" ]; then
+          sed -i 's/-lncurses/-lpdcurses/g' Makefile
+        fi
+        
+        echo "Available library files:"
+        ls -la /mingw64/lib/lib*curses*
         
         make VERBOSE=1
       
