@@ -1,70 +1,50 @@
-name: Build and Package EXE
+name: Build Windows EXE
 
 on:
   workflow_dispatch:
-  
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: ['**']
 
 jobs:
-  build-and-package:
+  build-windows:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
-    
-    name: Build Executable
-    runs-on: ubuntu-latest
+    name: Build Windows Executable
+    runs-on: windows-latest
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
       
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential libncurses-dev
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-pdcurses
+          make
     
     - name: Create build directories
+      shell: msys2 {0}
       run: mkdir -p bin build
       
     - name: Build application
-      run: make
-      
-    - name: Verify executable
+      shell: msys2 {0}
       run: |
-        if [ -f "bin/main" ]; then
-          echo "Build successful - executable created"
-          chmod +x bin/main
-        else
-          echo "Build failed - no executable found"
-          exit 1
-        fi
-    
+        sed -i 's/-lncurses/-lpdcurses/g' Makefile
+        make
+      
     - name: Package executable
+      shell: msys2 {0}
       run: |
         mkdir -p package
-        cp bin/main package/game.exe
-        # cp -r assets package/assets
+        cp bin/main.exe package/game.exe
     
-    - name: Upload executable artifact
+    - name: Upload Windows executable
       uses: actions/upload-artifact@v4
       with:
-        name: game-executable
+        name: windows-game-executable
         path: package/
         retention-days: 14
         if-no-files-found: error
-    
-    - name: Generate build info
-      id: build-info
-      run: |
-        echo "build-time=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_OUTPUT
-        echo "commit-sha=${{ github.sha }}" >> $GITHUB_OUTPUT
-        echo "branch-name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-    
-    - name: Build summary
-      run: |
-        echo "Build complete" >> $GITHUB_STEP_SUMMARY
-        echo "Build time: ${{ steps.build-info.outputs.build-time }}" >> $GITHUB_STEP_SUMMARY
-        echo "Branch: ${{ steps.build-info.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
-        echo "On commit: ${{ steps.build-info.outputs.commit-sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "Filename: game.exe" >> $GITHUB_STEP_SUMMARY
-        echo "Download file from artifacts section above." >> $GITHUB_STEP_SUMMARY
