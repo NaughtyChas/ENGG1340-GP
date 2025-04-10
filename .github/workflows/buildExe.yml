@@ -22,7 +22,7 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-ncurses  # 尝试使用ncurses而非pdcurses
+          mingw-w64-x86_64-ncurses
           make
           
     - name: Create build directories
@@ -32,16 +32,13 @@ jobs:
     - name: Build application
       shell: msys2 {0}
       run: |
-        # 不修改库，保持使用ncurses
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
         
-        # 添加适当的调试信息
-        echo "===== PDCurses/NCurses库信息 ====="
+        echo "===== PDCurses/NCurses ====="
         pacman -Qi mingw-w64-x86_64-ncurses
         ls -la /mingw64/bin/*curses*
         echo "=================================="
         
-        # 设置编译环境并构建
         export CXXFLAGS="-I/mingw64/include"
         make
       
@@ -50,7 +47,6 @@ jobs:
       run: |
         mkdir -p package
         cp bin/main.exe package/game.exe
-        # 复制ncurses库文件而非pdcurses
         cp /mingw64/bin/libncurses*.dll package/
         cp /mingw64/bin/libgcc_s_seh-1.dll package/
         cp /mingw64/bin/libstdc++-6.dll package/
