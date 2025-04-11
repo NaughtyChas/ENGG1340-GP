@@ -1,6 +1,10 @@
+# Set ncurses installation path
+NCURSES_PATH=~/local
+
+# Compiler settings
 CXX = g++
-CXXFLAGS = -std=c++14
-LDFLAGS = -lncurses
+CXXFLAGS = -std=c++14 -I$(NCURSES_PATH)/include
+LDFLAGS = -L$(NCURSES_PATH)/lib -lncurses
 
 # Directories
 BIN_DIR = bin
@@ -14,7 +18,12 @@ OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/game.o $(BUILD_DIR)/startGame.o
 
 SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/game.cpp $(SRC_DIR)/startGame.cpp
 
-all: directories $(TARGET)
+all: install-ncurses directories $(TARGET)
+
+# Install ncurses if not already installed
+install-ncurses:
+	chmod +x installNcurses.sh
+	./installNcurses.sh
 
 directories:
 	mkdir -p $(BIN_DIR)
@@ -35,4 +44,4 @@ $(BUILD_DIR)/startGame.o: $(SRC_DIR)/startGame.cpp $(INCLUDE_DIR)/startGame.h
 clean:
 	rm -rf $(BUILD_DIR)/*.o $(TARGET)
 
-.PHONY: all clean directories
+.PHONY: all clean directories install-ncurses

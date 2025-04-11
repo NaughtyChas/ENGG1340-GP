@@ -33,7 +33,7 @@ void Game::displayMenu() {
             wattron(mainWindow, A_REVERSE);
         }
         mvwprintw(mainWindow, height / 2 - menuItems.size() / 2 + i,
-                 width / 2 - menuItems[i].length() / 2, menuItems[i].c_str());
+                  width / 2 - menuItems[i].length() / 2, menuItems[i].c_str());
         wattroff(mainWindow, A_REVERSE);
     }
 
@@ -55,7 +55,6 @@ void Game::display_size_warning() {
     std::string warning = "WARNING: Terminal size too small!";
     mvwprintw(mainWindow, height / 2, width / 2 - warning.length() / 2, warning.c_str());
     attroff(A_BOLD);
-    
     wrefresh(mainWindow);
 }
 
@@ -64,7 +63,6 @@ bool Game::checkSize() {
     getmaxyx(stdscr, newHeight, newWidth);
     height = newHeight;
     width = newWidth;
-    
     return (newHeight >= MIN_HEIGHT && newWidth >= MIN_WIDTH);
 }
 
