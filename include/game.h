@@ -9,8 +9,8 @@
 enum class GameState {
     MAIN_MENU,
     DIFFICULTY_SELECT,
+    STATS,
     IN_GAME,
-    LOADING,
     EXITING
 };
 
@@ -36,10 +36,10 @@ private:
     void displayDifficultyMenu();
     void displayContent(const std::string& text);
     void display_size_warning();
+    void displayStats(); // Changed load() to displayStats()
 
     // Game Logic Functions
     void newGame(int difficulty);
-    void load();
 
     // Input Handlers
     void handleMainMenuInput(int choice);

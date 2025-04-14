@@ -10,7 +10,7 @@ const int MIN_HEIGHT = 25;
 const int MIN_WIDTH = 80;
 
 // Constructor initializes ncurses and create main window
-Game::Game() : menuHighlight(0), menuItems{"Start", "Load", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
+Game::Game() : menuHighlight(0), menuItems{"Start", "Stats", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
     initscr();             // Initialize ncurses
     cbreak();              // Disable line buffering
     noecho();              // Don't show input
@@ -86,6 +86,8 @@ void Game::displayMenu() {
     mvwprintw(mainWindow, rightY++, descX, " ");
     mvwprintw(mainWindow, rightY++, descX, "Select 'Start' to begin");
     mvwprintw(mainWindow, rightY++, descX, "your perilous journey.");
+    mvwprintw(mainWindow, rightY++, descX, "Select 'Stats' to view");
+    mvwprintw(mainWindow, rightY++, descX, "your past performance.");
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
     wattroff(mainWindow, COLOR_PAIR(2));
 
@@ -239,13 +241,11 @@ void Game::newGame(int difficulty) {
     current_state = GameState::MAIN_MENU; // Return to main menu for now
 }
 
-// I am still thinking if we have to add a load function or not, personally I think it is not needed
-// but I will leave it here for now, just in case we need it later
-// I suggest changing this "load" to Stats, where players can see their stats when selecting it
-
-void Game::load() {
-    displayContent("Loading game... (Not implemented)");
-    // TODO: Implement loading logic from a save file
+void Game::displayStats() {
+    displayContent("Displaying Stats... (Not implemented)");
+    // TODO: Implement stats display logic
+    // For now, just show a message and wait for input to return
+    wgetch(mainWindow); // Wait for key press before returning
     current_state = GameState::MAIN_MENU; // Return to main menu
 }
 
@@ -270,6 +270,9 @@ void Game::run() {
             case GameState::DIFFICULTY_SELECT:
                 displayDifficultyMenu();
                 break;
+            case GameState::STATS:
+                displayStats();
+                break;
             // Add cases for IN_GAME, GAME_OVER etc. later
             default:
                  // Shouldn't happen but just in case
@@ -278,24 +281,26 @@ void Game::run() {
                  break;
         }
 
-        // Input Handling
-        choice = wgetch(mainWindow); // Get input
+        // Input Handling - Only process input if not already handled by the display function (like displayStats)
+        if (current_state != GameState::STATS) {
+            choice = wgetch(mainWindow); // Get input
 
-        // State-Specific Input Processing
-        switch (current_state) {
-            case GameState::MAIN_MENU:
-                handleMainMenuInput(choice);
-                break;
-            case GameState::DIFFICULTY_SELECT:
-                handleDifficultyInput(choice);
-                break;
-            // Add cases for other states
-        }
+            // State-Specific Input Processing
+            switch (current_state) {
+                case GameState::MAIN_MENU:
+                    handleMainMenuInput(choice);
+                    break;
+                case GameState::DIFFICULTY_SELECT:
+                    handleDifficultyInput(choice);
+                    break;
+                // Add cases for other states
+            }
 
-        // Handle Global Events (like resize)
-        if (choice == KEY_RESIZE) {
-             // Size check is handled at the start of the loop.
-             touchwin(mainWindow);
+            // Handle Global Events (like resize)
+            if (choice == KEY_RESIZE) {
+                 // Size check is handled at the start of the loop.
+                 touchwin(mainWindow);
+            }
         }
     }
 }
@@ -315,8 +320,8 @@ void Game::handleMainMenuInput(int choice) {
             if (menuHighlight == 0) { // "Start" selected
                 current_state = GameState::DIFFICULTY_SELECT;
                 difficultyHighlight = 0; // Reset difficulty selection highlight
-            } else if (menuHighlight == 1) { // "Load" selected
-                load(); // Stays in MAIN_MENU state after load placeholder
+            } else if (menuHighlight == 1) { // "Stats" selected
+                current_state = GameState::STATS;
             } else if (menuHighlight == 2) { // "Exit" selected
                 current_state = GameState::EXITING;
             }
