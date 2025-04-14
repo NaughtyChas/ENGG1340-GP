@@ -18,6 +18,9 @@ Game::Game() : menuHighlight(0), menuItems{"Start", "Stats", "Exit"}, current_st
     start_color();         // Enable color usage
     keypad(stdscr, TRUE);  // Enable special keys for stdscr initially
 
+    // Set timeout for ESC key
+    ESCDELAY = 25;
+
     // Initialize color pairs
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
@@ -170,8 +173,7 @@ void Game::displayContent(const std::string& text) {
      werase(mainWindow);
      box(mainWindow, 0, 0);
      mvwprintw(mainWindow, height / 2, (width - text.length()) / 2, "%s", text.c_str());
-     wrefresh(mainWindow);
-     wgetch(mainWindow);
+     wgetch(mainWindow);  // wgetch refreshes window by default
 }
 
 void Game::display_size_warning() {
@@ -245,8 +247,6 @@ void Game::displayStats() {
     displayContent("Displaying Stats... (Not implemented)");
     // TODO: Implement stats display logic
     // For now, just show a message and wait for input to return
-    wgetch(mainWindow); // Wait for key press before returning
-    current_state = GameState::MAIN_MENU; // Return to main menu
 }
 
 // Main Game Loop
@@ -298,9 +298,11 @@ void Game::run() {
 
             // Handle Global Events (like resize)
             if (choice == KEY_RESIZE) {
-                 // Size check is handled at the start of the loop.
-                 touchwin(mainWindow);
+                // Size check is handled at the start of the loop.
+                touchwin(mainWindow);
             }
+        } else {
+            current_state = GameState::MAIN_MENU;
         }
     }
 }
