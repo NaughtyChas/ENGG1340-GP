@@ -11,51 +11,48 @@ jobs:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Build Windows Executable
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-      
+
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         update: true
-        install: >-
+        install: >
+          git
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ncurses
           make
-          
+
     - name: Find ncurses headers and create compatibility layer
       shell: msys2 {0}
       run: |
         echo "Finding ncurses.h..."
         echo "#include <ncurses/ncurses.h>" > /mingw64/include/ncurses.h
-        
+
         mkdir -p include
         echo "#include <ncurses/ncurses.h>" > include/ncurses.h
-        
-        # Create home directory compatibility headers too
+
         mkdir -p ~/local/include
         echo "#include <ncurses/ncurses.h>" > ~/local/include/ncurses.h
-        
+
         echo "Created ncurses.h compatibility headers"
-    
+
     - name: Create build directories
       shell: msys2 {0}
       run: mkdir -p bin build
-      
+
     - name: Build application
       shell: msys2 {0}
       run: |
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
-        
         export CXXFLAGS="-I/mingw64/include"
-        
         sed -i 's/-lncurses/-lncursesw/g' Makefile
-        
         echo "Building with modified settings..."
         make
-      
+
     - name: Package executable with dependencies
       shell: msys2 {0}
       run: |
@@ -65,10 +62,9 @@ jobs:
         cp /mingw64/bin/libgcc_s_seh-1.dll package/
         cp /mingw64/bin/libstdc++-6.dll package/
         cp /mingw64/bin/libwinpthread-1.dll package/
-        
         cp /mingw64/bin/libiconv*.dll package/
         cp /mingw64/bin/libintl*.dll package/
-    
+
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
       with:
