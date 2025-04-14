@@ -43,13 +43,16 @@ jobs:
     - name: Build application
       shell: msys2 {0}
       run: |
-        sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
+        echo "Updating Makefile for Windows target..."
+        sed -i 's/TARGET = $(BIN_DIR)\\/main/TARGET = $(BIN_DIR)\\/main.exe/g' Makefile
         
-        export CXXFLAGS="-I/mingw64/include"
-        
+        echo "Updating Makefile to use ncursesw library..."
         sed -i 's/-lncurses/-lncursesw/g' Makefile
-        
-        echo "Building with modified settings..."
+
+        echo "Updating Makefile ncurses library path..."
+        sed -i 's|-L~/local/lib|-L/mingw64/lib|g' Makefile 
+
+        echo "Building application..."
         make
       
     - name: Package executable with dependencies
