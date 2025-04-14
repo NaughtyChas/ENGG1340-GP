@@ -23,46 +23,22 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ncurses
-          mingw-w64-x86_64-ncurses-devel
           make
           
-    - name: Create compatibility layer for ncurses
+    - name: Find ncurses headers and create compatibility layer
       shell: msys2 {0}
       run: |
-        mkdir -p ~/local/include ~/local/lib
+        echo "Finding ncurses.h..."
+        echo "#include <ncurses/ncurses.h>" > /mingw64/include/ncurses.h
         
-        echo "Creating symbolic links for ncurses headers..."
-        cp -r /mingw64/include/ncurses* ~/local/include/
+        mkdir -p include
+        echo "#include <ncurses/ncurses.h>" > include/ncurses.h
         
-        if [ ! -f ~/local/include/ncurses.h ]; then
-          echo "#include <ncursesw/ncurses.h>" > ~/local/include/ncurses.h
-          echo "Created compatibility ncurses.h header"
-        fi
+        # Create home directory compatibility headers too
+        mkdir -p ~/local/include
+        echo "#include <ncurses/ncurses.h>" > ~/local/include/ncurses.h
         
-        echo "Copying ncurses libraries..."
-        cp -r /mingw64/lib/libncursesw* ~/local/lib/
-        ln -sf ~/local/lib/libncursesw.a ~/local/lib/libncurses.a
-        ln -sf ~/local/lib/libncursesw.dll.a ~/local/lib/libncurses.dll.a
-        
-        echo "Checking compatibility layer..."
-        ls -la ~/local/include/
-        ls -la ~/local/lib/
-        
-    - name: Fix Makefile 
-      shell: msys2 {0}
-      run: |
-        echo "Removing calls to installNcurses.sh from Makefile..."
-        cp Makefile Makefile.bak
-        sed -i '/installNcurses.sh/d' Makefile
-        
-        echo "Updating Makefile for Windows target..."
-        sed -i 's/$(BIN_DIR)\\\\main/$(BIN_DIR)\\\\main.exe/g' Makefile
-        
-        echo "Updating Makefile to use ncursesw library..."
-        sed -i 's/-lncurses/-lncursesw/g' Makefile
-        
-        echo "Modified Makefile:"
-        cat Makefile
+        echo "Created ncurses.h compatibility headers"
     
     - name: Create build directories
       shell: msys2 {0}
@@ -71,27 +47,27 @@ jobs:
     - name: Build application
       shell: msys2 {0}
       run: |
-        echo "Building application..."
+        sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
+        
+        export CXXFLAGS="-I/mingw64/include"
+        
+        sed -i 's/-lncurses/-lncursesw/g' Makefile
+        
+        echo "Building with modified settings..."
         make
       
     - name: Package executable with dependencies
       shell: msys2 {0}
       run: |
-        if [ -f bin/main.exe ]; then
-          mkdir -p package
-          cp bin/main.exe package/game.exe
-          cp /mingw64/bin/libncursesw*.dll package/
-          cp /mingw64/bin/libgcc_s_seh-1.dll package/
-          cp /mingw64/bin/libstdc++-6.dll package/
-          cp /mingw64/bin/libwinpthread-1.dll package/
-          cp /mingw64/bin/libiconv*.dll package/
-          cp /mingw64/bin/libintl*.dll package/
-          echo "Package created successfully!"
-        else
-          echo "Error: Executable not found!"
-          ls -la bin/
-          exit 1
-        fi
+        mkdir -p package
+        cp bin/main.exe package/game.exe
+        cp /mingw64/bin/libncursesw*.dll package/
+        cp /mingw64/bin/libgcc_s_seh-1.dll package/
+        cp /mingw64/bin/libstdc++-6.dll package/
+        cp /mingw64/bin/libwinpthread-1.dll package/
+        
+        cp /mingw64/bin/libiconv*.dll package/
+        cp /mingw64/bin/libintl*.dll package/
     
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
