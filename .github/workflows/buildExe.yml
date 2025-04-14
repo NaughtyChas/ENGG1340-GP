@@ -23,14 +23,36 @@ jobs:
         install: >-
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ncurses
+          mingw-w64-x86_64-ncurses-devel
           make
           
-    - name: Fix Makefile to avoid ncurses installation loop
+    - name: Create compatibility layer for ncurses
+      shell: msys2 {0}
+      run: |
+        mkdir -p ~/local/include ~/local/lib
+        
+        echo "Creating symbolic links for ncurses headers..."
+        cp -r /mingw64/include/ncurses* ~/local/include/
+        
+        if [ ! -f ~/local/include/ncurses.h ]; then
+          echo "#include <ncursesw/ncurses.h>" > ~/local/include/ncurses.h
+          echo "Created compatibility ncurses.h header"
+        fi
+        
+        echo "Copying ncurses libraries..."
+        cp -r /mingw64/lib/libncursesw* ~/local/lib/
+        ln -sf ~/local/lib/libncursesw.a ~/local/lib/libncurses.a
+        ln -sf ~/local/lib/libncursesw.dll.a ~/local/lib/libncurses.dll.a
+        
+        echo "Checking compatibility layer..."
+        ls -la ~/local/include/
+        ls -la ~/local/lib/
+        
+    - name: Fix Makefile 
       shell: msys2 {0}
       run: |
         echo "Removing calls to installNcurses.sh from Makefile..."
         cp Makefile Makefile.bak
-        
         sed -i '/installNcurses.sh/d' Makefile
         
         echo "Updating Makefile for Windows target..."
@@ -38,17 +60,6 @@ jobs:
         
         echo "Updating Makefile to use ncursesw library..."
         sed -i 's/-lncurses/-lncursesw/g' Makefile
-        
-        echo "Finding where ncurses.h is located..."
-        find /mingw64 -name ncurses.h
-        
-        echo "Updating compiler flags directly..."
-        sed -i 's/g++ -std=c++14/g++ -std=c++14 -I\/mingw64\/include/g' Makefile
-        
-        sed -i 's|-I~/local/include|-I/mingw64/include|g' Makefile
-        sed -i 's|-L~/local/lib|-L/mingw64/lib|g' Makefile
-        
-        grep -q "CXXFLAGS" Makefile || echo "CXXFLAGS = -I/mingw64/include" >> Makefile
         
         echo "Modified Makefile:"
         cat Makefile
@@ -66,15 +77,21 @@ jobs:
     - name: Package executable with dependencies
       shell: msys2 {0}
       run: |
-        mkdir -p package
-        cp bin/main.exe package/game.exe
-        cp /mingw64/bin/libncursesw*.dll package/
-        cp /mingw64/bin/libgcc_s_seh-1.dll package/
-        cp /mingw64/bin/libstdc++-6.dll package/
-        cp /mingw64/bin/libwinpthread-1.dll package/
-        
-        cp /mingw64/bin/libiconv*.dll package/
-        cp /mingw64/bin/libintl*.dll package/
+        if [ -f bin/main.exe ]; then
+          mkdir -p package
+          cp bin/main.exe package/game.exe
+          cp /mingw64/bin/libncursesw*.dll package/
+          cp /mingw64/bin/libgcc_s_seh-1.dll package/
+          cp /mingw64/bin/libstdc++-6.dll package/
+          cp /mingw64/bin/libwinpthread-1.dll package/
+          cp /mingw64/bin/libiconv*.dll package/
+          cp /mingw64/bin/libintl*.dll package/
+          echo "Package created successfully!"
+        else
+          echo "Error: Executable not found!"
+          ls -la bin/
+          exit 1
+        fi
     
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
