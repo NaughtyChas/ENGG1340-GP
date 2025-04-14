@@ -44,7 +44,7 @@ jobs:
       shell: msys2 {0}
       run: |
         echo "Updating Makefile for Windows target..."
-        sed -i 's/TARGET = $(BIN_DIR)\\/main/TARGET = $(BIN_DIR)\\/main.exe/g' Makefile
+        sed -i 's/$(BIN_DIR)\\main/$(BIN_DIR)\\main.exe/g' Makefile
         
         echo "Updating Makefile to use ncursesw library..."
         sed -i 's/-lncurses/-lncursesw/g' Makefile
