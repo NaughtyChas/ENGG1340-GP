@@ -25,16 +25,28 @@ jobs:
           mingw-w64-x86_64-ncurses
           make
           
-    - name: Find ncurses headers and create compatibility layer
+    - name: Fix Makefile to avoid ncurses installation loop
       shell: msys2 {0}
       run: |
-        echo "Finding ncurses.h..."
-        echo "#include <ncurses/ncurses.h>" > /mingw64/include/ncurses.h
+        echo "Removing calls to installNcurses.sh from Makefile..."
+        cp Makefile Makefile.bak
         
-        mkdir -p include
-        echo "#include <ncurses/ncurses.h>" > include/ncurses.h
+        sed -i '/installNcurses.sh/d' Makefile
         
-        echo "Created ncurses.h symlink"
+        echo "Updating Makefile for Windows target..."
+        sed -i 's/$(BIN_DIR)\\\\main/$(BIN_DIR)\\\\main.exe/g' Makefile
+        
+        echo "Updating Makefile to use ncursesw library..."
+        sed -i 's/-lncurses/-lncursesw/g' Makefile
+
+        echo "Updating Makefile ncurses library path..."
+        sed -i 's|-L~/local/lib|-L/mingw64/lib|g' Makefile
+        
+        echo "Adding system include paths..."
+        sed -i 's|-I~/local/include|-I/mingw64/include|g' Makefile
+        
+        echo "Modified Makefile:"
+        cat Makefile
     
     - name: Create build directories
       shell: msys2 {0}
@@ -43,15 +55,6 @@ jobs:
     - name: Build application
       shell: msys2 {0}
       run: |
-        echo "Updating Makefile for Windows target..."
-        sed -i 's/$(BIN_DIR)\\main/$(BIN_DIR)\\main.exe/g' Makefile
-        
-        echo "Updating Makefile to use ncursesw library..."
-        sed -i 's/-lncurses/-lncursesw/g' Makefile
-
-        echo "Updating Makefile ncurses library path..."
-        sed -i 's|-L~/local/lib|-L/mingw64/lib|g' Makefile 
-
         echo "Building application..."
         make
       
