@@ -38,6 +38,9 @@ private:
     void display_size_warning();
     void displayStats(); // Changed load() to displayStats()
 
+    // Window Resizing Functions
+    void displayInitialResizePrompt();
+
     // Game Logic Functions
     void newGame(int difficulty);
 

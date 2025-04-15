@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <locale>
 
 // Constants
 const int MIN_HEIGHT = 25;
@@ -43,6 +44,81 @@ Game::~Game() {
 }
 
 // Display Functions
+
+void Game::displayInitialResizePrompt() {
+    int currentHeight, currentWidth;
+    int ch;
+
+    // Ensure locale is set for std::to_string potentially
+    std::setlocale(LC_ALL, "");
+
+    nodelay(mainWindow, FALSE); // Ensure wgetch waits for input here
+
+    do {
+        getmaxyx(stdscr, currentHeight, currentWidth); // Get current terminal size
+
+        // Update game's internal dimensions and ncurses window size if they changed
+        // This allows the prompt itself to react to resizing
+        if (currentHeight != height || currentWidth != width) {
+             height = currentHeight;
+             width = currentWidth;
+             wresize(mainWindow, height, width);
+             mvwin(mainWindow, 0, 0); // Ensure window is at top-left
+        }
+
+        werase(mainWindow); // Clear the window content
+        box(mainWindow, 0, 0); // Redraw the border
+
+        // Prepare messages
+        std::string msg1 = "For the best experience, please resize the terminal to at least ";
+        msg1 += std::to_string(MIN_WIDTH) + "x" + std::to_string(MIN_HEIGHT) + ".";
+
+        std::string msg2 = "Current size: " + std::to_string(currentWidth) + "x" + std::to_string(currentHeight);
+        std::string msg3 = "Press ENTER to continue...";
+
+        // Calculate centered positions using potentially updated dimensions
+        int row1 = height / 2 - 2;
+        int row2 = height / 2;
+        int row3 = height / 2 + 2;
+        int col1 = std::max(1, (width - (int)msg1.length()) / 2);
+        int col2 = std::max(1, (width - (int)msg2.length()) / 2);
+        int col3 = std::max(1, (width - (int)msg3.length()) / 2);
+
+        // Display messages - Check if dimensions are large enough to display
+        if (height > 5 && width > (int)msg1.length() && width > (int)msg2.length() && width > (int)msg3.length()) {
+            wattron(mainWindow, COLOR_PAIR(1)); // Use a suitable color
+            mvwprintw(mainWindow, row1, col1, "%s", msg1.c_str());
+            wattroff(mainWindow, COLOR_PAIR(1));
+
+            wattron(mainWindow, COLOR_PAIR(2)); // Use a suitable color
+            mvwprintw(mainWindow, row2, col2, "%s", msg2.c_str());
+            mvwprintw(mainWindow, row3, col3, "%s", msg3.c_str());
+            wattroff(mainWindow, COLOR_PAIR(2));
+        } else {
+             // Fallback if window is too small to even display the message properly
+             const char* small_msg = "Terminal too small. Resize needed.";
+             mvwprintw(mainWindow, height / 2, std::max(1, (width - (int)strlen(small_msg)) / 2), "%s", small_msg);
+        }
+
+        wrefresh(mainWindow); // Refresh the window to show changes
+
+        // Wait for input
+        ch = wgetch(mainWindow); // Use mainWindow's keypad setting
+
+        // Explicitly handle resize event if received while waiting
+        if (ch == KEY_RESIZE) {
+            // The loop will automatically fetch new dimensions and redraw
+            continue;
+        }
+
+    // Loop until Enter key is pressed
+    } while (ch != '\n' && ch != KEY_ENTER);
+
+    // Clear the prompt screen before proceeding
+    werase(mainWindow);
+    box(mainWindow, 0, 0);
+    wrefresh(mainWindow);
+}
 
 void Game::displayMenu() {
     werase(mainWindow);
@@ -293,6 +369,8 @@ void Game::displayStats() {
 void Game::run() {
     int choice;
     
+    displayInitialResizePrompt();
+
     // Trigger the initial size check
     // This is a workaround for the first run, as sometimes the window size is not set correctly
     clear();
