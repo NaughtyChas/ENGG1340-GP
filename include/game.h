@@ -35,19 +35,18 @@ private:
     void displayMenu();
     void displayDifficultyMenu();
     void displayContent(const std::string& text);
-    void display_size_warning();
+    void display_size_warning(int &newHeight, int &newWidth);
     void displayStats(); // Changed load() to displayStats()
-
+    
     // Game Logic Functions
     void newGame(int difficulty);
-
+    
     // Input Handlers
     void handleMainMenuInput(int choice);
     void handleDifficultyInput(int choice);
-
+    
     // Utility Functions
-    bool checkSize();
-    void waitForResize();
+    void ask_for_resize();
 
 };
 

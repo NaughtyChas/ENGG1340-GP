@@ -171,60 +171,65 @@ void Game::displayContent(const std::string& text) {
      wgetch(mainWindow);  // wgetch refreshes window by default
 }
 
-void Game::display_size_warning() {
-     int term_h, term_w;
-     getmaxyx(stdscr, term_h, term_w);
-     erase(); // Clear stdscr
-     mvprintw(term_h / 2 - 1, (term_w - 35) / 2, "Terminal too small. Please resize.");
-     mvprintw(term_h / 2, (term_w - 42) / 2, "Requires at least %d height and %d width.", MIN_HEIGHT, MIN_WIDTH);
-     refresh(); // Refresh stdscr to show the warning
-}
-
-bool Game::checkSize() {
-    int newHeight, newWidth;
+void Game::display_size_warning(int &newHeight, int &newWidth) {
     getmaxyx(stdscr, newHeight, newWidth);
+    int screen_height = LINES;
+    int screen_width = COLS;
+    std::string resize_text = "Please resize to 25 by 80 Before Starting Game";
+    std::string current_size_text = "Current height: ";
+    std::string width_label = ", width: ";
 
-    if (newHeight < MIN_HEIGHT || newWidth < MIN_WIDTH) {
-        return false; // Size is too small = return false
-    }
+    int resize_text_len = resize_text.length();
+    int current_size_text_len = current_size_text.length();
+    int width_label_len = width_label.length();
 
-    // Only update and resize if size actually changed and is valid
-    if (newHeight != height || newWidth != width) {
-        height = newHeight;
-        width = newWidth;
+    int resize_row = screen_height / 2 - 2; // Position a bit above the center
+    int current_size_row = screen_height / 2;
+    int center_resize_col = (screen_width - resize_text_len) / 2;
+    int center_current_size_col = (screen_width - (current_size_text_len + std::to_string(newHeight).length() + width_label_len + std::to_string(newWidth).length())) / 2;
 
-        // Resize the ncurses window
-        wresize(mainWindow, height, width);
-        mvwin(mainWindow, 0, 0); // Ensure window is at top-left after resize
+    werase(mainWindow); // Clear the window content
+    box(mainWindow, 0, 0); // Redraw the border
 
-        // Re-draw necessary elements after resize
-        // Mark the window and its background for complete redraw
-        touchwin(stdscr);
-        touchwin(mainWindow);
-        wnoutrefresh(stdscr);
-        werase(mainWindow);
-        box(mainWindow, 0, 0); // Redraw box
-        wnoutrefresh(mainWindow);
-        doupdate();
-    }
-    return true; // Size is okay = return true
+    wattron(mainWindow, COLOR_PAIR(2));
+    mvwprintw(mainWindow, resize_row, center_resize_col, "%s", resize_text.c_str());
+    wattroff(mainWindow, COLOR_PAIR(2));
+
+    wattron(mainWindow, COLOR_PAIR(2));
+    mvwprintw(mainWindow, current_size_row, center_current_size_col, "%s", current_size_text.c_str());
+    wattroff(mainWindow, COLOR_PAIR(2));
+
+    wattron(mainWindow, COLOR_PAIR(1));
+    mvwprintw(mainWindow, current_size_row, center_current_size_col + current_size_text_len, "%d", newHeight);
+    wattroff(mainWindow, COLOR_PAIR(1));
+
+    wattron(mainWindow, COLOR_PAIR(2));
+    mvwprintw(mainWindow, current_size_row, center_current_size_col + current_size_text_len + std::to_string(newHeight).length(), "%s", width_label.c_str());
+    wattroff(mainWindow, COLOR_PAIR(2));
+
+    wattron(mainWindow, COLOR_PAIR(1));
+    mvwprintw(mainWindow, current_size_row, center_current_size_col + current_size_text_len + std::to_string(newHeight).length() + width_label_len, "%d", newWidth);
+    wattroff(mainWindow, COLOR_PAIR(1));
+
+    wattron(mainWindow, COLOR_PAIR(2));
+    mvwprintw(mainWindow, current_size_row + 2, (screen_width - 23) / 2, "Press Enter to continue...");
+    wattroff(mainWindow, COLOR_PAIR(2));
+
+    wrefresh(mainWindow);
+
+    napms(100); // Wait briefly to avoid busy-waiting
 }
 
-void Game::waitForResize() {
-    display_size_warning(); // Show warning on stdscr
+void Game::ask_for_resize() {
+    int choice;
+    int newHeight, newWidth;
 
-    // Optional: Clear any pending input
-    int ch;
-    nodelay(stdscr, TRUE); // Make getch non-blocking
-    while ((ch = getch()) != ERR) {
-        // Discard any input received while resizing
-    }
-    nodelay(stdscr, FALSE); // Return getch to blocking mode
+    werase(mainWindow);
+    box(mainWindow, 0, 0);
+    display_size_warning(newHeight, newWidth);
 
-    // Loop until the size is adequate
-    while (!checkSize()) {
-        // checkSize() now handles resize and redraw if size becomes valid
-        napms(100); // Wait briefly to avoid busy-waiting
+    while ((choice = getch()) != '\n') {
+        display_size_warning(newHeight, newWidth);
     }
 }
 
@@ -253,14 +258,16 @@ void Game::displayStats() {
 void Game::run() {
     int choice;
 
+    ask_for_resize();
+
     while (current_state != GameState::EXITING) { // Loop until exit state
-        // Size Check
-        if (!checkSize()) {
-            waitForResize();
-            // After resize, checkSize() will have redrawn the window if necessary.
-            // Continue ensures the correct state's display function is called immediately.
-            continue;
-        }
+        // // Size Check
+        // if (!checkSize()) {
+        //     waitForResize();
+        //     // After resize, checkSize() will have redrawn the window if necessary.
+        //     // Continue ensures the correct state's display function is called immediately.
+        //     continue;
+        // }
 
         // Display based on State
         switch (current_state) {
