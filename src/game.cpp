@@ -72,22 +72,27 @@ void Game::displayInitialResizePrompt() {
         // Prepare messages
         std::string msg1 = "For the best experience, please resize the terminal to at least ";
         msg1 += std::to_string(MIN_WIDTH) + "x" + std::to_string(MIN_HEIGHT) + ".";
+        std::string msg1_sub = "If you can't see the right boundary, please resize the terminal.";
 
         std::string msg2 = "Current size: " + std::to_string(currentWidth) + "x" + std::to_string(currentHeight);
         std::string msg3 = "Press ENTER to continue...";
 
         // Calculate centered positions using potentially updated dimensions
-        int row1 = height / 2 - 2;
+        int row1 = height / 2 - 3;
+        int row1_sub = height / 2 - 2;
         int row2 = height / 2;
         int row3 = height / 2 + 2;
+
         int col1 = std::max(1, (width - (int)msg1.length()) / 2);
+        int col1_sub = std::max(1, (width - (int)msg1_sub.length()) / 2);
         int col2 = std::max(1, (width - (int)msg2.length()) / 2);
         int col3 = std::max(1, (width - (int)msg3.length()) / 2);
 
         // Display messages - Check if dimensions are large enough to display
-        if (height > 5 && width > (int)msg1.length() && width > (int)msg2.length() && width > (int)msg3.length()) {
+        if (height > 7 && width > (int)msg1.length() && width > (int)msg1_sub.length() && width > (int)msg2.length() && width > (int)msg3.length()) {
             wattron(mainWindow, COLOR_PAIR(1)); // Use a suitable color
             mvwprintw(mainWindow, row1, col1, "%s", msg1.c_str());
+            mvwprintw(mainWindow, row1_sub, col1_sub, "%s", msg1_sub.c_str());
             wattroff(mainWindow, COLOR_PAIR(1));
 
             wattron(mainWindow, COLOR_PAIR(2)); // Use a suitable color
