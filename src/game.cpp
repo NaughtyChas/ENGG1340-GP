@@ -226,6 +226,25 @@ void Game::waitForResize() {
         // checkSize() now handles resize and redraw if size becomes valid
         napms(100); // Wait briefly to avoid busy-waiting
     }
+    
+    // Refresh the main window after resizing
+    clear();
+    refresh();
+    werase(mainWindow);
+    box(mainWindow, 0, 0);
+    
+    // Back to the current game state
+    switch (current_state) {
+        case GameState::MAIN_MENU:
+            displayMenu();
+            break;
+        case GameState::DIFFICULTY_SELECT:
+            displayDifficultyMenu();
+            break;
+        default:
+            wrefresh(mainWindow);
+            break;
+    }
 }
 
 void Game::newGame(int difficulty) {
