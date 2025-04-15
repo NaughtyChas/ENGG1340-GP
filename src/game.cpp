@@ -212,24 +212,39 @@ bool Game::checkSize() {
 
 void Game::waitForResize() {
     display_size_warning(); // Show warning on stdscr
-
-    // Optional: Clear any pending input
-    int ch;
-    nodelay(stdscr, TRUE); // Make getch non-blocking
-    while ((ch = getch()) != ERR) {
-        // Discard any input received while resizing
-    }
-    nodelay(stdscr, FALSE); // Return getch to blocking mode
-
-    // Loop until the size is adequate
-    while (!checkSize()) {
-        // checkSize() now handles resize and redraw if size becomes valid
-        napms(100); // Wait briefly to avoid busy-waiting
+    
+    nodelay(stdscr, TRUE); // Set non-blocking mode for stdscr
+    
+    bool correctSize = false;
+    while (!correctSize) {
+        int ch = getch();
+        
+        // Check for resize or error
+        if (ch == KEY_RESIZE || ch == ERR) {
+            int newHeight, newWidth;
+            getmaxyx(stdscr, newHeight, newWidth);
+            
+            if (newHeight >= MIN_HEIGHT && newWidth >= MIN_WIDTH) {
+                height = newHeight;
+                width = newWidth;
+                correctSize = true;
+                break;
+            } else {
+                display_size_warning();
+            }
+        }
+        
+        napms(100);
     }
     
-    // Refresh the main window after resizing
+    nodelay(stdscr, FALSE);
+    
     clear();
     refresh();
+    
+    wresize(mainWindow, height, width);
+    mvwin(mainWindow, 0, 0);
+    
     werase(mainWindow);
     box(mainWindow, 0, 0);
     
