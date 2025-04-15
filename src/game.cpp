@@ -249,17 +249,20 @@ void Game::displayDifficultyMenu() {
     // Difficulty Options
     int startY = height / 2 - difficultyItems.size() / 2;
     for (int i = 0; i < difficultyItems.size(); ++i) {
+        std::string prefix = (i == difficultyHighlight) ? ">> " : "   "; // Add prefix
         if (i == difficultyHighlight) {
-            wattron(mainWindow, A_REVERSE);
+            wattron(mainWindow, A_REVERSE | COLOR_PAIR(1)); // Use same highlight style
+        } else {
+             wattroff(mainWindow, A_REVERSE | COLOR_PAIR(1)); // Ensure no highlight otherwise
         }
-        mvwprintw(mainWindow, startY + i, menuX, "%s", difficultyItems[i].c_str());
-        if (i == difficultyHighlight) {
-            wattroff(mainWindow, A_REVERSE);
-        }
+        mvwprintw(mainWindow, startY + i, menuX, "%s%s", prefix.c_str(), difficultyItems[i].c_str());
     }
+    wattroff(mainWindow, A_REVERSE | COLOR_PAIR(1)); // Turn off highlight after loop
 
     // Diff Details
     int rightY = startY - 2;
+    rightY = std::max(5, rightY);
+
     wattron(mainWindow, COLOR_PAIR(2));
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
 
@@ -298,7 +301,14 @@ void Game::displayDifficultyMenu() {
     // Bottom Instructions
     const char* instructions = "UP/DOWN to change, ENTER to confirm, ESC to go back.";
     int instrX = std::max(1, (width - (int)strlen(instructions)) / 2); // Center these texts
-    mvwprintw(mainWindow, height - 3, instrX, "%s", instructions);
+    int instrY = height - 3;
+    if (instrY <= rightY) {
+        instrY = rightY + 1;
+    }
+    // Off screen test
+    instrY = std::min(height - 2, instrY);
+
+    mvwprintw(mainWindow, instrY, instrX, "%s", instructions);
 
     wrefresh(mainWindow);
 }
