@@ -39,6 +39,7 @@ Game::Game()
     curs_set(0);           // Don't show curses
     keypad(stdscr, TRUE);  // Enable special keys
     start_color();         // Enable color support
+    set_escdelay(0);       // Remove ESC delay
 
     // Initialize color pairs
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
@@ -88,7 +89,8 @@ void Game::displayInitialResizePrompt() {
         box(mainWindow, 0, 0);  // Redraw the border
 
         // Prepare messages
-        std::string msg1 = "For best experience, please resize the terminal to full screen.";
+        std::string msg1 = "For best experience, please resize the terminal to FULL SCREEN, or at least ";
+        msg1 += std::to_string(MIN_WIDTH) + "x" + std::to_string(MIN_HEIGHT) + ".";
         std::string msg1_sub = "If you can't see the right boundary, please resize the terminal.";
 
         std::string msg2 =
