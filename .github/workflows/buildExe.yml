@@ -11,6 +11,8 @@ jobs:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Build Windows Executable
     runs-on: windows-latest
+    permissions:
+      pull-requests: write
 
     steps:
     - name: Checkout repository
@@ -77,3 +79,51 @@ jobs:
       if: always()
       run: |
         echo "::notice::Windows executable artifact can be downloaded from this workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    - name: Post artifact link comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const commitSha = context.sha;
+          const shortSha = commitSha.slice(0, 7);
+          const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitSha}`;
+          const commitMessage = (context.payload.head_commit && context.payload.head_commit.message) || 'N/A';
+          const actor = context.actor;
+          const timestamp = new Date().toISOString(); // ISO 8601 format includes seconds
+
+          const commentMarker = "<!-- GITHUB_ACTIONS_ARTIFACT_COMMENT -->";
+          const commentBody = `Build successful. Download Windows executable from [workflow run page](${runUrl}).\n\nBuilt on: ${timestamp} on Commit [${shortSha}](${commitUrl}) by ${actor}: ${commitMessage}\n\n${commentMarker}`;
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const previousComment = comments.find(comment =>
+            comment.user.login === 'github-actions[bot]' &&
+            comment.body.includes(commentMarker)
+          );
+
+          if (previousComment) {
+            // Update the existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: previousComment.id,
+              body: commentBody
+            });
+            console.log(`Updated comment ${previousComment.id}`);
+          } else {
+            // Create a new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+            console.log('Created a new comment');
+          }
