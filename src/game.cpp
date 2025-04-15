@@ -88,8 +88,7 @@ void Game::displayInitialResizePrompt() {
         box(mainWindow, 0, 0);  // Redraw the border
 
         // Prepare messages
-        std::string msg1 = "For the best experience, please resize the terminal to at least ";
-        msg1 += std::to_string(MIN_WIDTH) + "x" + std::to_string(MIN_HEIGHT) + ".";
+        std::string msg1 = "For best experience, please resize the terminal to full screen.";
         std::string msg1_sub = "If you can't see the right boundary, please resize the terminal.";
 
         std::string msg2 =
@@ -125,8 +124,6 @@ void Game::displayInitialResizePrompt() {
             mvwprintw(mainWindow, height / 2, std::max(1, (width - (int)strlen(small_msg)) / 2),
                       "%s", small_msg);
         }
-
-        wrefresh(mainWindow);  // Refresh the window to show changes
 
         // Wait for input
         ch = wgetch(mainWindow);  // Use mainWindow's keypad setting
@@ -200,7 +197,8 @@ void Game::displayMenu() {
                       ascii_subtitle[i]);
         }
         wattroff(mainWindow, COLOR_PAIR(1) | A_BOLD);
-        menu_start_y = art_start_y + art_total_lines + 2;  // Position menu below art
+        // menu_start_y = art_start_y + art_total_lines + 2;  // Position menu below art
+        menu_start_y = height / 2 - 1;  // Position menu in the middle
     } else {
         // Terminal too small, display simple title
         const char* title = "Rebirth: Me Delivering Keeta in Doomsday";
@@ -208,7 +206,7 @@ void Game::displayMenu() {
         wattron(mainWindow, COLOR_PAIR(1) | A_BOLD);
         mvwprintw(mainWindow, 3, std::max(1, (width - titleLen) / 2), "%s", title);
         wattroff(mainWindow, COLOR_PAIR(1) | A_BOLD);
-        menu_start_y = 6;  // Default position if no art
+        menu_start_y = height / 2 - 1;  // Default position if no art
     }
 
     // Menu Items and Instructions
