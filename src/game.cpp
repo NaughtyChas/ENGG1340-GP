@@ -6,21 +6,32 @@
 #include <algorithm>
 #include <locale>
 
+// Include windows.h only on Windows platforms
+// Make sure that the window will be maximized on Windows
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 // Constants
 const int MIN_HEIGHT = 25;
 const int MIN_WIDTH = 80;
 
 // Constructor initializes ncurses and create main window
-Game::Game() : menuHighlight(0), menuItems{"Start", "Stats", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
-    initscr();             // Initialize ncurses
+Game::Game() : menuHighlight(0), menuItems{"New Game", "Load", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
+#ifdef _WIN32
+    // Get the console window handle and maximize it
+    HWND consoleWindow = GetConsoleWindow();
+    if (consoleWindow != NULL) {
+        ShowWindow(consoleWindow, SW_MAXIMIZE);
+    }
+#endif
+
+    initscr();             // Initialize ncurses AFTER maximizing attempt
     cbreak();              // Disable line buffering
     noecho();              // Don't show input
     curs_set(0);           // Don't show curses
-    start_color();         // Enable color usage
-    keypad(stdscr, TRUE);  // Enable special keys for stdscr initially
-
-    // Set timeout for ESC key
-    ESCDELAY = 25;
+    keypad(stdscr, TRUE);  // Enable special keys
+    start_color();         // Enable color support
 
     // Initialize color pairs
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
