@@ -17,7 +17,7 @@ const int MIN_HEIGHT = 25;
 const int MIN_WIDTH = 80;
 
 // Constructor initializes ncurses and create main window
-Game::Game() : menuHighlight(0), menuItems{"New Game", "Load", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
+Game::Game() : menuHighlight(0), menuItems{"New Game", "Stats", "Exit"}, current_state(GameState::MAIN_MENU), difficultyHighlight(0), difficultyItems{"Easy", "Medium", "Hard"} {
 #ifdef _WIN32
     // Get the console window handle and maximize it
     HWND consoleWindow = GetConsoleWindow();
@@ -140,44 +140,91 @@ void Game::displayMenu() {
     werase(mainWindow);
     box(mainWindow, 0, 0);
 
-    // Show title in the center
-    const char* title = "Rebirth: Me Delivering Keeta in Doomsday";
-    int titleLen = strlen(title);
-    wattron(mainWindow, COLOR_PAIR(1) | A_BOLD);
-    mvwprintw(mainWindow, 3, std::max(1, (width - titleLen) / 2), "%s", title); // Gets centered
-    wattroff(mainWindow, COLOR_PAIR(1) | A_BOLD);
+    // ASCII Art Definitions
+    // The whole ASCII Art is in its fine state so I suggest to keep it as is
+    static const char* ascii_rebirth[] = {
+        "     ____       __    _      __  __     ",
+        "    / __ \\___  / /_  (_)____/ /_/ /_  _ ",
+        "   / /_/ / _ \\/ __ \\/ / ___/ __/ __ \\(_)",
+        "  / _, _/  __/ /_/ / / /  / /_/ / / /   ",
+        " /_/ |_|\\___/_.___/_/_/   \\__/_/ /_(_)  ",
+        "                                        "
+    };
+    static const char* ascii_subtitle[] = {
+        "     __  ___        ____       ___                 _                __ __          __           _          ____                                 __           ",
+        "    /  |/  /__     / __ \\___  / (_)   _____  _____(_)___  ____ _   / //_/__  ___  / /_____ _   (_)___     / __ \\____  ____  ____ ___  _________/ /___ ___  __",
+        "   / /|_/ / _ \\   / / / / _ \\/ / / | / / _ \\/ ___/ / __ \\/ __ `/  / ,< / _ \\/ _ \\/ __/ __ `/  / / __ \\   / / / / __ \\/ __ \\/ __ `__ \\/ ___/ __  / __ `/ / / /",
+        "  / /  / /  __/  / /_/ /  __/ / /| |/ /  __/ /  / / / / / /_/ /  / /| /  __/  __/ /_/ /_/ /  / / / / /  / /_/ / /_/ / /_/ / / / / / (__  ) /_/ / /_/ / /_/ / ",
+        "  /_/  /_/\\___/  /_____/\\___/_/_/ |___/\\___/_/  /_/_/ /_/\\__, /  /_/ |_\\___/\\___/\\__/\\__,_/  /_/_/ /_/  /_____/\\____/\\____/_/ /_/ /_/____/\\__,_/\\__,_/\\__, /  ",
+        "                                                        /____/                                                                                       /____/   "
+    };
+    int rebirth_lines = sizeof(ascii_rebirth) / sizeof(ascii_rebirth[0]);
+    int subtitle_lines = sizeof(ascii_subtitle) / sizeof(ascii_subtitle[0]);
+    int art_total_lines = rebirth_lines + subtitle_lines;
+    int art_max_width = 0; // Find the widest line for centering checks
+    for(int i=0; i<rebirth_lines; ++i) art_max_width = std::max(art_max_width, (int)strlen(ascii_rebirth[i]));
+    for(int i=0; i<subtitle_lines; ++i) art_max_width = std::max(art_max_width, (int)strlen(ascii_subtitle[i]));
 
-    // These lines calculate the X positions for the menu and description columns
-    // The menu will be on the left, and the description on the right.
+    int art_start_y = 2; // Start drawing art from row 2
+    int menu_start_y; // Where menu items will start vertically
+
+    // Check if terminal is large enough for ASCII art
+    if (width >= art_max_width + 2 && height >= art_total_lines + 10) { // +10 for padding and menu items
+        // Display ASCII Art
+        wattron(mainWindow, COLOR_PAIR(1) | A_BOLD);
+        // Print "Rebirth" part
+        for (int i = 0; i < rebirth_lines; ++i) {
+            mvwprintw(mainWindow, art_start_y + i, std::max(1, (width - (int)strlen(ascii_rebirth[i])) / 2), "%s", ascii_rebirth[i]);
+        }
+        // Print subtitle part
+        for (int i = 0; i < subtitle_lines; ++i) {
+            mvwprintw(mainWindow, art_start_y + rebirth_lines + i, std::max(1, (width - (int)strlen(ascii_subtitle[i])) / 2), "%s", ascii_subtitle[i]);
+        }
+        wattroff(mainWindow, COLOR_PAIR(1) | A_BOLD);
+        menu_start_y = art_start_y + art_total_lines + 2; // Position menu below art
+    } else {
+        // Terminal too small, display simple title
+        const char* title = "Rebirth: Me Delivering Keeta in Doomsday";
+        int titleLen = strlen(title);
+        wattron(mainWindow, COLOR_PAIR(1) | A_BOLD);
+        mvwprintw(mainWindow, 3, std::max(1, (width - titleLen) / 2), "%s", title);
+        wattroff(mainWindow, COLOR_PAIR(1) | A_BOLD);
+        menu_start_y = 6; // Default position if no art
+    }
+
+    // Menu Items and Instructions
+    // Adjust positions based on whether ASCII art was shown
+
     int menuX = std::max(1, width * 3 / 10);
     int descX = std::max(menuX + 15, width * 6 / 10);
 
-    // Menu items
-    int startY = height / 2 - menuItems.size() / 2;
+    int current_menu_y = menu_start_y;
     for (int i = 0; i < menuItems.size(); ++i) {
         if (i == menuHighlight) {
-            wattron(mainWindow, A_REVERSE);
+            wattron(mainWindow, A_REVERSE | COLOR_PAIR(1));
+        } else {
+             wattroff(mainWindow, A_REVERSE | COLOR_PAIR(1));
         }
-        mvwprintw(mainWindow, startY + i, menuX, "%s", menuItems[i].c_str());
-        if (i == menuHighlight) {
-            wattroff(mainWindow, A_REVERSE);
-        }
+        // Add a small prefix for visual selection indication
+        // "I like this, this is cute."
+        std::string prefix = (i == menuHighlight) ? ">> " : "   ";
+        mvwprintw(mainWindow, current_menu_y + i, menuX, "%s%s", prefix.c_str(), menuItems[i].c_str());
     }
+     wattroff(mainWindow, A_REVERSE | COLOR_PAIR(1)); // Turn off highlight after loop
 
-    // Instructions
-    int rightY = startY;
-    wattron(mainWindow, COLOR_PAIR(2)); // Change the color pair accordingly @Art&Design
-
+    // Instructions - Use calculated menu_start_y
+    int rightY = menu_start_y; // Align instructions with menu items vertically
+    wattron(mainWindow, COLOR_PAIR(2));
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
     mvwprintw(mainWindow, rightY++, descX, "Welcome, Player!");
     mvwprintw(mainWindow, rightY++, descX, " ");
     mvwprintw(mainWindow, rightY++, descX, "Navigate: UP/DOWN Arrows");
     mvwprintw(mainWindow, rightY++, descX, "Select:   ENTER");
     mvwprintw(mainWindow, rightY++, descX, " ");
-    mvwprintw(mainWindow, rightY++, descX, "Select 'Start' to begin");
+    mvwprintw(mainWindow, rightY++, descX, "Select 'New Game' to begin");
     mvwprintw(mainWindow, rightY++, descX, "your perilous journey.");
-    mvwprintw(mainWindow, rightY++, descX, "Select 'Stats' to view");
-    mvwprintw(mainWindow, rightY++, descX, "your past performance.");
+    mvwprintw(mainWindow, rightY++, descX, "Select 'Stats' to check your");
+    mvwprintw(mainWindow, rightY++, descX, "previous progress.");
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
     wattroff(mainWindow, COLOR_PAIR(2));
 
