@@ -25,13 +25,8 @@ Game::Game() : menuHighlight(0), menuItems{"Start", "Stats", "Exit"}, current_st
     init_pair(1, COLOR_YELLOW, COLOR_BLACK);
     init_pair(2, COLOR_CYAN, COLOR_BLACK);
 
-    // Get screen size
+    // Get initial screen size - run() will handle the check and wait if needed
     getmaxyx(stdscr, height, width);
-
-    // Check initial size
-    if (!checkSize()) {
-         display_size_warning();
-    }
 
     // Create the main window
     mainWindow = newwin(height, width, 0, 0);
@@ -179,10 +174,10 @@ void Game::displayContent(const std::string& text) {
 void Game::display_size_warning() {
      int term_h, term_w;
      getmaxyx(stdscr, term_h, term_w);
-     erase();
+     erase(); // Clear stdscr
      mvprintw(term_h / 2 - 1, (term_w - 35) / 2, "Terminal too small. Please resize.");
      mvprintw(term_h / 2, (term_w - 42) / 2, "Requires at least %d height and %d width.", MIN_HEIGHT, MIN_WIDTH);
-     refresh();
+     refresh(); // Refresh stdscr to show the warning
 }
 
 bool Game::checkSize() {
@@ -193,40 +188,44 @@ bool Game::checkSize() {
         return false; // Size is too small = return false
     }
 
-    // Only update if size actually changed and is valid
+    // Only update and resize if size actually changed and is valid
     if (newHeight != height || newWidth != width) {
         height = newHeight;
         width = newWidth;
 
-        // Resize the window
+        // Resize the ncurses window
         wresize(mainWindow, height, width);
+        mvwin(mainWindow, 0, 0); // Ensure window is at top-left after resize
 
         // Re-draw necessary elements after resize
+        // Mark the window and its background for complete redraw
+        touchwin(stdscr);
+        touchwin(mainWindow);
+        wnoutrefresh(stdscr);
         werase(mainWindow);
-        box(mainWindow, 0, 0);
+        box(mainWindow, 0, 0); // Redraw box
+        wnoutrefresh(mainWindow);
+        doupdate();
     }
     return true; // Size is okay = return true
 }
 
 void Game::waitForResize() {
-    display_size_warning();
+    display_size_warning(); // Show warning on stdscr
+
+    // Optional: Clear any pending input
     int ch;
-    nodelay(stdscr, TRUE);
-    while ((ch = getch()) != ERR) { ; }
-    nodelay(stdscr, FALSE);
+    nodelay(stdscr, TRUE); // Make getch non-blocking
+    while ((ch = getch()) != ERR) {
+        // Discard any input received while resizing
+    }
+    nodelay(stdscr, FALSE); // Return getch to blocking mode
 
     // Loop until the size is adequate
     while (!checkSize()) {
-        // Check for resize event without blocking (optional but better UX)
-        napms(100);
+        // checkSize() now handles resize and redraw if size becomes valid
+        napms(100); // Wait briefly to avoid busy-waiting
     }
-    clear();
-    refresh();
-
-    // Ensure the mainWindow is ready for drawing after resize
-    keypad(mainWindow, TRUE);
-    touchwin(mainWindow);
-    wrefresh(mainWindow);
 }
 
 void Game::newGame(int difficulty) {
@@ -258,8 +257,9 @@ void Game::run() {
         // Size Check
         if (!checkSize()) {
             waitForResize();
-            // After resize, the loop continues and redraws the correct menu
-            continue; // Skip the rest of the loop iteration to redraw immediately
+            // After resize, checkSize() will have redrawn the window if necessary.
+            // Continue ensures the correct state's display function is called immediately.
+            continue;
         }
 
         // Display based on State
@@ -295,13 +295,8 @@ void Game::run() {
                     break;
                 // Add cases for other states
             }
-
-            // Handle Global Events (like resize)
-            if (choice == KEY_RESIZE) {
-                // Size check is handled at the start of the loop.
-                touchwin(mainWindow);
-            }
         } else {
+            // If stats were displayed, return to main menu
             current_state = GameState::MAIN_MENU;
         }
     }
