@@ -188,12 +188,18 @@ bool Game::checkSize() {
         return false; // Size is too small = return false
     }
 
-    // Only update and resize if size actually changed and is valid
-    if (newHeight != height || newWidth != width) {
+    // Add static variable to track first run
+    static bool firstRun = true;
+    
+    // When the window is resized, check if the new size is different from the old size
+    if (newHeight != height || newWidth != width || firstRun) {
         height = newHeight;
         width = newWidth;
 
         // Resize the ncurses window
+        firstRun = false;
+
+        // Adjust the main window size and position
         wresize(mainWindow, height, width);
         mvwin(mainWindow, 0, 0); // Ensure window is at top-left after resize
 
