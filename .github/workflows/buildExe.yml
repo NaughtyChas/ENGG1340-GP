@@ -72,3 +72,8 @@ jobs:
         path: package/
         retention-days: 14
         if-no-files-found: error
+
+    - name: Add artifact link annotation
+      if: always()
+      run: |
+        echo "::notice::Windows executable artifact can be downloaded from this workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
