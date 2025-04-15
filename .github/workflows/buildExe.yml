@@ -11,47 +11,50 @@ jobs:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Build Windows Executable
     runs-on: windows-latest
-    
+    permissions:
+      pull-requests: write
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-      
+
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         update: true
-        install: >-
+        install: >
+          git
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-ncurses
           make
-          
+
     - name: Find ncurses headers and create compatibility layer
       shell: msys2 {0}
       run: |
         echo "Finding ncurses.h..."
         echo "#include <ncurses/ncurses.h>" > /mingw64/include/ncurses.h
-        
+
         mkdir -p include
         echo "#include <ncurses/ncurses.h>" > include/ncurses.h
-        
-        echo "Created ncurses.h symlink"
-    
+
+        mkdir -p ~/local/include
+        echo "#include <ncurses/ncurses.h>" > ~/local/include/ncurses.h
+
+        echo "Created ncurses.h compatibility headers"
+
     - name: Create build directories
       shell: msys2 {0}
       run: mkdir -p bin build
-      
+
     - name: Build application
       shell: msys2 {0}
       run: |
         sed -i 's/TARGET = $(BIN_DIR)\/main/TARGET = $(BIN_DIR)\/main.exe/g' Makefile
-        
         export CXXFLAGS="-I/mingw64/include"
-        
         sed -i 's/-lncurses/-lncursesw/g' Makefile
-        
         echo "Building with modified settings..."
         make
-      
+
     - name: Package executable with dependencies
       shell: msys2 {0}
       run: |
@@ -61,10 +64,9 @@ jobs:
         cp /mingw64/bin/libgcc_s_seh-1.dll package/
         cp /mingw64/bin/libstdc++-6.dll package/
         cp /mingw64/bin/libwinpthread-1.dll package/
-        
         cp /mingw64/bin/libiconv*.dll package/
         cp /mingw64/bin/libintl*.dll package/
-    
+
     - name: Upload Windows executable
       uses: actions/upload-artifact@v4
       with:
@@ -72,3 +74,56 @@ jobs:
         path: package/
         retention-days: 14
         if-no-files-found: error
+
+    - name: Add artifact link annotation
+      if: always()
+      run: |
+        echo "::notice::Windows executable artifact can be downloaded from this workflow run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+    - name: Post artifact link comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const commitSha = context.sha;
+          const shortSha = commitSha.slice(0, 7);
+          const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitSha}`;
+          const commitMessage = (context.payload.head_commit && context.payload.head_commit.message) || 'N/A';
+          const actor = context.actor;
+          const timestamp = new Date().toISOString(); // ISO 8601 format includes seconds
+
+          const commentMarker = "<!-- GITHUB_ACTIONS_ARTIFACT_COMMENT -->";
+          const commentBody = `Build successful. Download Windows executable from [workflow run page](${runUrl}).\n\nBuilt on: ${timestamp} on Commit [${shortSha}](${commitUrl}) by ${actor}: ${commitMessage}\n\n${commentMarker}`;
+
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const previousComment = comments.find(comment =>
+            comment.user.login === 'github-actions[bot]' &&
+            comment.body.includes(commentMarker)
+          );
+
+          if (previousComment) {
+            // Update the existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: previousComment.id,
+              body: commentBody
+            });
+            console.log(`Updated comment ${previousComment.id}`);
+          } else {
+            // Create a new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: commentBody
+            });
+            console.log('Created a new comment');
+          }
