@@ -292,6 +292,16 @@ void Game::displayStats() {
 
 void Game::run() {
     int choice;
+    
+    // Trigger the initial size check
+    // This is a workaround for the first run, as sometimes the window size is not set correctly
+    clear();
+    refresh();
+    wresize(mainWindow, height, width);
+    mvwin(mainWindow, 0, 0);
+    werase(mainWindow);
+    box(mainWindow, 0, 0);
+    wrefresh(mainWindow);
 
     while (current_state != GameState::EXITING) { // Loop until exit state
         // Size Check
