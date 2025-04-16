@@ -4,12 +4,21 @@ Game built for ENGG1340 group project.
 *
 *
 * ZhangQi 3036292697
-*
+* WuZijie 3036296930
 *
 *
 ## DESCRIPTION FOR THE GAME ##
 * Title: 《 ***Rebirth : Me Delivering Keeta in Doomsday*** 》
 * Background Story:
+  - One minute, you were just a normal student, bored out of your mind in class, scrolling through your phone and ordering "Keeta Takeout". The next minute— _BOOM_. Your brain short-circuited. The world went black......\
+    You woke up to the sound of the earth splitting open, your face pressed against cracked asphalt, the sky a sickly shade of blood-red, with strange walls and obstacles rising everywhere.\
+    "What the—?!"\
+    Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors, rogue machines, and the most serious problem-resource supply.\
+    Your phone buzzes violently in your pocket. You pull it out with trembling hands, a notification appear:\
+    There is a map shown the location of packages and delivery location.\
+    "Packages remaining today: 3"\
+    That’s when you notice the uniform clinging to your body—neon orange, with the Keeta logo smeared. Every parcel is a fragile heartbeat in the chest of the apocalypse for life.\
+    Move. Move! Time waits for noone. Every second wasted is another name crossed off the list. Your lungs scream, your muscles burn—keep running.
 * Brief Introduction:
   - This is a text-based single-player puzzle graphics game. Your goal is to transport more goods to the location with limited stamina.
   - Players need to need to choose the right path to avoid obstacles. As well as choose the right time to take and put the goods.
