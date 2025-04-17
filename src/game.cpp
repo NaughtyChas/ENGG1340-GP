@@ -169,7 +169,7 @@ void Game::displayMenu() {
         " /_/  /_/\\___/  /_____/\\___/_/_/ |___/\\___/_/  /_/_/ /_/\\__, /  /_/ "
         "|_\\___/\\___/\\__/\\__,_/  /_/_/ /_/  /_____/\\____/\\____/_/ /_/ "
         "/_/____/\\__,_/\\__,_/\\__, /  ",
-        "                                                        /____/                            "
+        "                                                       /____/                            "
         "                                                           /____/   "};
     int rebirth_lines = sizeof(ascii_rebirth) / sizeof(ascii_rebirth[0]);
     int subtitle_lines = sizeof(ascii_subtitle) / sizeof(ascii_subtitle[0]);
