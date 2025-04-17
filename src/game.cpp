@@ -1,4 +1,5 @@
 #include "../include/game.h"
+#include "../include/gameplay.h"
 
 #include <ncurses.h>
 #include <string.h>
@@ -447,26 +448,11 @@ void Game::waitForResize() {
     }
 }
 
-void Game::newGame(int difficulty) {
-    std::string diff_str;
-    switch (difficulty) {
-        case 0:
-            diff_str = "Easy";
-            break;
-        case 1:
-            diff_str = "Medium";
-            break;
-        case 2:
-            diff_str = "Hard";
-            break;
-        default:
-            diff_str = "Unknown";
-            break;
-    }
-    displayContent("Starting a new game on " + diff_str + " difficulty... (Gameplay TBD)");
+void Game::newGame(const int difficultyHighlight) {
     // TODO: Initialize game state based on difficulty (map size, packages, etc.)
     // TODO: Enter the actual game loop here (or elsewhere, I might be reconstructing it soon)
-    current_state = GameState::MAIN_MENU;  // Return to main menu for now
+    Gameplay gameplay(difficultyHighlight, current_state);
+    gameplay.run();
 }
 
 void Game::displayStats() {
@@ -595,3 +581,4 @@ void Game::handleDifficultyInput(int choice) {
             break;
     }
 }
+
