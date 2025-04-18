@@ -21,12 +21,15 @@ private:
     int num_pkg;
     int height, width;
     int roundNumber;
+    int currentStamina;
+    int maxStamina;
 
     // Windows
     WINDOW *mapWin;
     WINDOW *statsWin;
     WINDOW *timeWin;
     WINDOW *legendWin;
+    WINDOW *staminaWin;
 
     // Private Methods
     void resizeWindows();
@@ -34,6 +37,7 @@ private:
     void displayStats();
     void displayTime();
     void displayLegend();
+    void displayStaminaBar();
     // Add methods for handling input, updating game state...
     // TBD
 };
