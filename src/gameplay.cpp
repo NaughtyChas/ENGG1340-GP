@@ -94,38 +94,59 @@ void Gameplay::resizeWindows() {
     int timeWidth = width / 4;
     int statsWidth = width / 4;
     int historyWidth = legendWidth;
-    int packageWidth = timeWidth;
+
+    // --- Bottom Panel Heights ---
+    int bottomPanelHeight = 3; // Common height for stamina and package
+
+    // --- Calculate Bottom Panel Widths ---
+    int staminaWidth = std::max(20, width / 3);
+    // Calculate desired package width
+    int packageWidth = 4 + (num_pkg * 2) + 4;
+    packageWidth = std::max(15, packageWidth);
+
+    // --- Adjust widths if total exceeds screen width ---
+    int totalBottomWidth = staminaWidth + packageWidth;
+    if (totalBottomWidth > width) {
+        double ratio = static_cast<double>(width) / totalBottomWidth;
+        staminaWidth = std::max(10, static_cast<int>(staminaWidth * ratio));
+        packageWidth = width - staminaWidth; // Give remaining space to package
+        packageWidth = std::max(1, packageWidth);
+    }
+    staminaWidth = std::max(1, staminaWidth);
+
+
+    // Centered Starting X for Bottom Panel
+    int bottomStartX = std::max(0, (width - (staminaWidth + packageWidth)) / 2);
+
+    // --- Stamina Window Position  ---
+    int staminaY = height - bottomPanelHeight;
+    int staminaX = bottomStartX;
+
+    // --- Package Window Position  ---
+    int packageHeight = bottomPanelHeight;
+    int packageY = height - bottomPanelHeight;
+    int packageX = staminaX + staminaWidth;
+
 
     // --- Side Panel Heights & Positions ---
     // Left Side
-    int legendHeight = std::min(height, height / 2);
+    int legendHeight = std::min(height - bottomPanelHeight, height / 2);
     int legendX = 0;
     int legendY = 0;
     // --- History Window ---
     int historyY = legendHeight;
-    // Height fills remaining space on the left side
-    int historyHeight = std::max(1, height - legendHeight);
+    int historyHeight = std::max(1, height - legendHeight - bottomPanelHeight);
     int historyX = 0;
 
     // Right Side
-    int timeHeight = std::min(height, height / 4);
+    int timeHeight = std::min(height - bottomPanelHeight, height / 4);
     int timeX = std::max(0, width - timeWidth);
     int timeY = 0;
 
-    int packageHeight = 3;
-    int packageX = timeX;
-    int packageY = timeY + timeHeight;
-
     int statsX = timeX;
-    int statsY = packageY + packageHeight;
-    int statsHeight = std::max(1, height - statsY);
+    int statsY = timeY + timeHeight;
+    int statsHeight = std::max(1, height - timeHeight - bottomPanelHeight);
 
-    // --- Stamina Window ---
-    int staminaHeight = 3; // We will use fixed height for the bar
-    int staminaWidth = std::max(20, width / 2);
-    staminaWidth = std::min(width, staminaWidth);
-    int staminaY = height - staminaHeight;
-    int staminaX = std::max(0, (width - staminaWidth) / 2);
 
     // --- Resize and Reposition ---
     wresize(mapWin, mapHeight, mapWidth);
@@ -140,17 +161,19 @@ void Gameplay::resizeWindows() {
     wresize(timeWin, timeHeight, timeWidth);
     mvwin(timeWin, timeY, timeX);
 
-    wresize(packageWin, packageHeight, packageWidth);
-    mvwin(packageWin, packageY, packageX);
-
     wresize(statsWin, statsHeight, statsWidth);
     mvwin(statsWin, statsY, statsX);
 
     // Note: With the map centered, the side panels (Legend, Time, Stats)
     // might overlap the map if the terminal width is not large enough
     // maybe will carryout a check here to ensure that the map is not overlapped
-    wresize(staminaWin, staminaHeight, staminaWidth);
+    // Reposition Stamina window using bottomStartX
+    wresize(staminaWin, bottomPanelHeight, staminaWidth);
     mvwin(staminaWin, staminaY, staminaX);
+
+    // Reposition Package window using calculated packageX
+    wresize(packageWin, packageHeight, packageWidth);
+    mvwin(packageWin, packageY, packageX);
 }
 
 void Gameplay::run() {
