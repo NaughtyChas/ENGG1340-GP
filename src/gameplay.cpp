@@ -190,22 +190,47 @@ void Gameplay::displayTime() {
 void Gameplay::displayLegend() {
     werase(legendWin);
     box(legendWin, 0, 0);
+
     // Display Round Number
     std::string roundText = "Round " + std::to_string(roundNumber);
     wattron(legendWin, A_BOLD);
     mvwprintw(legendWin, 0, 2, " %s ", roundText.c_str());
-    wattroff(legendWin, A_BOLD); // Tested on Windows build but the bold text is not correctly displayed
-    // I have to commit this so I can test on Linux build in CS servers
+    wattroff(legendWin, A_BOLD);
 
-    // Legend Content
-    mvwprintw(legendWin, 2, 2, "Legend:");
-    mvwprintw(legendWin, 3, 2, "@: Player");
-    mvwprintw(legendWin, 4, 2, "#: Obstacle");
-    mvwprintw(legendWin, 5, 2, "~: Speed Bump");
-    mvwprintw(legendWin, 6, 2, "$: Supply");
-    mvwprintw(legendWin, 7, 2, "O: Package");
-    mvwprintw(legendWin, 8, 2, "Q: Exit");
-    // I've randomly written some. Change them later on.
+    // --- Starting row for content ---
+    int row = 2;
+    int col = 2;
+
+    // --- Legend Content ---
+    mvwprintw(legendWin, row++, col, "--- Legend ---");
+    mvwprintw(legendWin, row++, col, " @: Player");
+    mvwprintw(legendWin, row++, col, " #: Obstacle");
+    mvwprintw(legendWin, row++, col, " ~: Speed Bump");
+    mvwprintw(legendWin, row++, col, " $: Supply");
+    mvwprintw(legendWin, row++, col, " O: Package");
+    mvwprintw(legendWin, row++, col, " Q: Exit");
+    row++;
+
+    // --- Movement Controls ---
+    mvwprintw(legendWin, row++, col, "--- Movement ---");
+    mvwprintw(legendWin, row++, col, "   W: Move Up");
+    mvwprintw(legendWin, row++, col, "   S: Move Down");
+    mvwprintw(legendWin, row++, col, "   A: Move Left");
+    mvwprintw(legendWin, row++, col, "   D: Move Right");
+    row++;
+
+
+    // --- Package Controls ---
+    mvwprintw(legendWin, row++, col, "--- Package ---");
+    mvwprintw(legendWin, row++, col, "   Q: Pick Up");
+    mvwprintw(legendWin, row++, col, "   E: Drop current package");
+    mvwprintw(legendWin, row++, col, " 1-5: Switch current package"); // Simplified
+    row++;
+
+    // --- Game Controls ---
+    mvwprintw(legendWin, row++, col, "---- Game ----");
+    mvwprintw(legendWin, row++, col, " ESC: Pause");
+    mvwprintw(legendWin, row++, col, " Hold ESC: Quit");
 
     wnoutrefresh(legendWin);
 }
