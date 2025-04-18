@@ -4,6 +4,7 @@
 #include <ncurses.h>
 #include <string>
 #include <vector>
+#include <chrono>
 #include "game.h"
 
 class Gameplay {
@@ -27,6 +28,7 @@ private:
     int currentStamina;
     int maxStamina;
     std::vector<std::string> historyMessages; // To store messages
+    std::chrono::steady_clock::time_point startTime;
 
     // Windows
     WINDOW *mapWin;

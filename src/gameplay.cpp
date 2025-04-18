@@ -5,6 +5,9 @@
 #include <string>
 #include <vector> // Not used for now, but might be needed later
 #include <cmath>
+#include <chrono> // For timing
+#include <iomanip>
+#include <sstream>
 
 // Constructor initializes windows based on difficulty
 Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
@@ -16,6 +19,7 @@ Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200)
+      // startTime is default initialized, will be set in run()
 {
     switch (difficultyHighlight) {
         case 0:
@@ -145,6 +149,7 @@ void Gameplay::run() {
     }
 
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
+    startTime = std::chrono::steady_clock::now();
 
     while(current_state != GameState::MAIN_MENU) {
         getmaxyx(stdscr, height, width);
@@ -234,7 +239,29 @@ void Gameplay::displayStats() {
 void Gameplay::displayTime() {
     werase(timeWin);
     box(timeWin, 0, 0);
-    mvwprintw(timeWin, 0, 2, " Time ");
+    mvwprintw(timeWin, 0, 2, " Time Info ");
+
+    // --- Calculate Elapsed Time ---
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+    long long totalSeconds = elapsed.count();
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+
+    // --- Format Time String (MM:SS) ---
+    std::ostringstream timeStream;
+    timeStream << std::setw(2) << std::setfill('0') << minutes << ":"
+               << std::setw(2) << std::setfill('0') << seconds;
+    std::string timeStr = timeStream.str();
+
+    // --- Display Information ---
+    int row = 1;
+    int col = 2;
+    mvwprintw(timeWin, row++, col, "Elapsed: %s", timeStr.c_str());
+    row++; // Add a blank line
+    mvwprintw(timeWin, row++, col, "Time Bonus:");
+    mvwprintw(timeWin, row++, col, "  (Not Implemented)"); // Placeholder, will be implemented later
+
     wnoutrefresh(timeWin);
 }
 
