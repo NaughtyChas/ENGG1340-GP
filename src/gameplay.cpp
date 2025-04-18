@@ -13,6 +13,7 @@ Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
       map_size(0),
       num_obs(0),
       num_pkg(0),
+      roundNumber(1),
       currentStamina(200),
       maxStamina(200)
 {
@@ -49,6 +50,7 @@ Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
     timeWin = newwin(1, 1, 0, 0);
     legendWin = newwin(1, 1, 0, 0);
     staminaWin = newwin(3, 1, 0, 0);
+    historyWin = newwin(1, 1, 0, 0);
 
     keypad(stdscr, TRUE);
 }
@@ -63,6 +65,7 @@ Gameplay::~Gameplay() {
     delwin(timeWin);
     delwin(legendWin);
     delwin(staminaWin);
+    delwin(historyWin);
 }
 
 void Gameplay::resizeWindows() {
@@ -79,17 +82,25 @@ void Gameplay::resizeWindows() {
     int legendWidth = width / 4;
     int timeWidth = width / 4;
     int statsWidth = width / 4;
+    int historyWidth = legendWidth;
 
     // --- Side Panel Heights & Positions ---
     int legendHeight = std::min(height, height / 2);
     int timeHeight = std::min(height, height / 4);
     int statsHeight = std::max(1, height - timeHeight);
+
     int legendX = 0;
     int legendY = 0;
     int timeX = std::max(0, width - timeWidth);
     int timeY = 0;
     int statsX = std::max(0, width - statsWidth);
     int statsY = std::min(height - 1, timeHeight);
+
+    // --- History Window ---
+    int historyY = legendHeight;
+    // Height fills remaining space on the left side
+    int historyHeight = std::max(1, height - legendHeight);
+    int historyX = 0;
 
     // --- Stamina Window ---
     int staminaHeight = 3; // We will use fixed height for the bar
@@ -111,6 +122,9 @@ void Gameplay::resizeWindows() {
     wresize(statsWin, statsHeight, statsWidth);
     mvwin(statsWin, statsY, statsX);
 
+    wresize(historyWin, historyHeight, historyWidth);
+    mvwin(historyWin, historyY, historyX);
+
     // Note: With the map centered, the side panels (Legend, Time, Stats)
     // might overlap the map if the terminal width is not large enough
     // maybe will carryout a check here to ensure that the map is not overlapped
@@ -130,6 +144,7 @@ void Gameplay::run() {
          init_pair(2, COLOR_CYAN, COLOR_BLACK);
     }
 
+    addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
 
     while(current_state != GameState::MAIN_MENU) {
         getmaxyx(stdscr, height, width);
@@ -141,6 +156,7 @@ void Gameplay::run() {
         displayTime();
         displayLegend();
         displayStaminaBar();
+        displayHistory();
 
         // Update all windows at once
         doupdate();
@@ -153,24 +169,34 @@ void Gameplay::run() {
         switch(ch) {
             case 27:
                 // TODO: might draw a new window to confirm exit
+                addHistoryMessage("Exiting to main menu..."); // Example message
                 current_state = GameState::MAIN_MENU;
                 return;
             case KEY_RESIZE:
+                addHistoryMessage("Terminal resized."); // Example message
                 clear();
                 refresh();
                 break;
             case 'a': // in case where the stamina is decreased
                  if (currentStamina > 0) {
                      currentStamina -= 10; // Decrease by 10 for now, press a for testing
+                     int oldStamina = currentStamina;
                      currentStamina = std::max(0, currentStamina);
                      staminaChanged = true;
+                     addHistoryMessage("Stamina decreased: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
+                 } else {
+                     addHistoryMessage("Stamina already empty!");
                  }
                  break;
              case 'd': // Increase stamina
                  if (currentStamina < maxStamina) {
                      currentStamina += 10; // Increase by 10 for now, also for testing
+                     int oldStamina = currentStamina;
                      currentStamina = std::min(maxStamina, currentStamina);
                      staminaChanged = true;
+                     addHistoryMessage("Stamina increased: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina)); // Example message
+                 } else {
+                     addHistoryMessage("Stamina already full!");
                  }
                  break;
             case ERR: // No input
@@ -296,4 +322,45 @@ void Gameplay::displayStaminaBar() {
 
 
     wnoutrefresh(staminaWin);
+}
+
+void Gameplay::displayHistory() {
+    werase(historyWin);
+    box(historyWin, 0, 0);
+
+    // --- Title ---
+    const char* title = " Gameplay History ";
+    mvwprintw(historyWin, 0, 2, title);
+
+    // --- Display Messages ---
+    int maxLines = getmaxy(historyWin) - 2;
+    int startIdx = 0;
+    if (historyMessages.size() > maxLines) {
+        startIdx = historyMessages.size() - maxLines;
+    }
+
+    int currentLine = 1; // Start drawing from line 1
+    for (size_t i = startIdx; i < historyMessages.size(); ++i) {
+        // Truncate message if too long for window width
+        int maxWidth = getmaxx(historyWin) - 4;
+        std::string msg = historyMessages[i];
+        if (msg.length() > maxWidth) {
+            msg = msg.substr(0, maxWidth);
+        }
+        mvwprintw(historyWin, currentLine++, 2, msg.c_str());
+    }
+
+    // Example placeholder if no messages yet
+    if (historyMessages.empty() && maxLines > 0) {
+         mvwprintw(historyWin, 1, 2, "No events yet...");
+    }
+
+
+    wnoutrefresh(historyWin);
+}
+
+// Function to add a message to the history
+// This function can be called from anywhere in the Gameplay class
+void Gameplay::addHistoryMessage(const std::string& message) {
+    historyMessages.push_back(message);
 }

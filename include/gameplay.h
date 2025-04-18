@@ -3,6 +3,7 @@
 
 #include <ncurses.h>
 #include <string>
+#include <vector>
 #include "game.h"
 
 class Gameplay {
@@ -10,6 +11,8 @@ public:
     Gameplay(const int &difficultyHighlight, GameState &current_state);
     ~Gameplay();
     void run();
+    // Not yet implemented
+    void addHistoryMessage(const std::string& message);
 
 private:
     // Member Variables
@@ -23,6 +26,7 @@ private:
     int roundNumber;
     int currentStamina;
     int maxStamina;
+    std::vector<std::string> historyMessages; // To store messages
 
     // Windows
     WINDOW *mapWin;
@@ -30,6 +34,7 @@ private:
     WINDOW *timeWin;
     WINDOW *legendWin;
     WINDOW *staminaWin;
+    WINDOW *historyWin;
 
     // Private Methods
     void resizeWindows();
@@ -40,6 +45,7 @@ private:
     void displayStaminaBar();
     // Add methods for handling input, updating game state...
     // TBD
+    void displayHistory();
 };
 
 #endif
