@@ -209,8 +209,8 @@ void Gameplay::run() {
                 break;
             case 'a': // in case where the stamina is decreased
                  if (currentStamina > 0) {
-                     currentStamina -= 10; // Decrease by 10 for now, press a for testing
                      int oldStamina = currentStamina;
+                     currentStamina -= 10; // Decrease by 10 for now, press a for testing
                      currentStamina = std::max(0, currentStamina);
                      staminaChanged = true;
                      addHistoryMessage("Stamina decreased: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
@@ -220,8 +220,8 @@ void Gameplay::run() {
                  break;
              case 'd': // Increase stamina
                  if (currentStamina < maxStamina) {
-                     currentStamina += 10; // Increase by 10 for now, also for testing
                      int oldStamina = currentStamina;
+                     currentStamina += 10; // Increase by 10 for now, also for testing
                      currentStamina = std::min(maxStamina, currentStamina);
                      staminaChanged = true;
                      addHistoryMessage("Stamina increased: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina)); // Example message
