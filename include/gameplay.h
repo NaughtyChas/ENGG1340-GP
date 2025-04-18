@@ -17,7 +17,7 @@ public:
 
 private:
     // Member Variables
-    GameState &current_state; // Initialize currentState by reference to enable direct modification
+    GameState &current_state; // Initialize current_State by reference to enable direct modification
     int difficultyHighlight;
     std::string diff_str;
     int map_size;
