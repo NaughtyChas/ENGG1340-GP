@@ -30,6 +30,10 @@ private:
     std::vector<std::string> historyMessages; // To store messages
     std::chrono::steady_clock::time_point startTime;
 
+    // Package Tracking
+    std::vector<bool> hasPackage;
+    int currentPackageIndex;
+
     // Windows
     WINDOW *mapWin;
     WINDOW *statsWin;
@@ -37,6 +41,7 @@ private:
     WINDOW *legendWin;
     WINDOW *staminaWin;
     WINDOW *historyWin;
+    WINDOW *packageWin;
 
     // Private Methods
     void resizeWindows();
@@ -48,6 +53,7 @@ private:
     // Add methods for handling input, updating game state...
     // TBD
     void displayHistory();
+    void displayPackages();
 };
 
 #endif

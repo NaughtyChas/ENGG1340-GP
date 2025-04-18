@@ -18,32 +18,37 @@ Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
       num_pkg(0),
       roundNumber(1),
       currentStamina(200),
-      maxStamina(200)
-      // startTime is default initialized, will be set in run()
+      maxStamina(200),
+      currentPackageIndex(-1) // Start with no package selected
 {
     switch (difficultyHighlight) {
         case 0:
             diff_str = "Easy";
-            map_size = 15;
+            map_size = 15; // Adjust in future
             num_obs = 5;
-            num_pkg = 5;
+            num_pkg = 3;
             break;
-        case 1:
+        case 1: // Medium
             diff_str = "Medium";
-            map_size = 20;
+            map_size = 20; // Same above
             num_obs = 6;
-            num_pkg = 6;
+            num_pkg = 4;
             break;
-        case 2:
+        case 2: // Hard
             diff_str = "Hard";
             map_size = 25;
             num_obs = 7;
-            num_pkg = 7;
+            num_pkg = 5;
             break;
         default:
             diff_str = "Unknown";
+            map_size = 15;
+            num_obs = 5;
+            num_pkg = 3;
             break;
     }
+
+    hasPackage.resize(num_pkg, false);
 
     nodelay(stdscr, TRUE);
     getmaxyx(stdscr, height, width);
@@ -55,6 +60,7 @@ Gameplay::Gameplay(const int &difficultyHighlight, GameState &current_state)
     legendWin = newwin(1, 1, 0, 0);
     staminaWin = newwin(3, 1, 0, 0);
     historyWin = newwin(1, 1, 0, 0);
+    packageWin = newwin(3, 1, 0, 0);
 
     keypad(stdscr, TRUE);
 }
@@ -70,6 +76,7 @@ Gameplay::~Gameplay() {
     delwin(legendWin);
     delwin(staminaWin);
     delwin(historyWin);
+    delwin(packageWin);
 }
 
 void Gameplay::resizeWindows() {
@@ -87,24 +94,31 @@ void Gameplay::resizeWindows() {
     int timeWidth = width / 4;
     int statsWidth = width / 4;
     int historyWidth = legendWidth;
+    int packageWidth = timeWidth;
 
     // --- Side Panel Heights & Positions ---
+    // Left Side
     int legendHeight = std::min(height, height / 2);
-    int timeHeight = std::min(height, height / 4);
-    int statsHeight = std::max(1, height - timeHeight);
-
     int legendX = 0;
     int legendY = 0;
-    int timeX = std::max(0, width - timeWidth);
-    int timeY = 0;
-    int statsX = std::max(0, width - statsWidth);
-    int statsY = std::min(height - 1, timeHeight);
-
     // --- History Window ---
     int historyY = legendHeight;
     // Height fills remaining space on the left side
     int historyHeight = std::max(1, height - legendHeight);
     int historyX = 0;
+
+    // Right Side
+    int timeHeight = std::min(height, height / 4);
+    int timeX = std::max(0, width - timeWidth);
+    int timeY = 0;
+
+    int packageHeight = 3;
+    int packageX = timeX;
+    int packageY = timeY + timeHeight;
+
+    int statsX = timeX;
+    int statsY = packageY + packageHeight;
+    int statsHeight = std::max(1, height - statsY);
 
     // --- Stamina Window ---
     int staminaHeight = 3; // We will use fixed height for the bar
@@ -120,14 +134,17 @@ void Gameplay::resizeWindows() {
     wresize(legendWin, legendHeight, legendWidth);
     mvwin(legendWin, legendY, legendX);
 
+    wresize(historyWin, historyHeight, historyWidth);
+    mvwin(historyWin, historyY, historyX);
+
     wresize(timeWin, timeHeight, timeWidth);
     mvwin(timeWin, timeY, timeX);
 
+    wresize(packageWin, packageHeight, packageWidth);
+    mvwin(packageWin, packageY, packageX);
+
     wresize(statsWin, statsHeight, statsWidth);
     mvwin(statsWin, statsY, statsX);
-
-    wresize(historyWin, historyHeight, historyWidth);
-    mvwin(historyWin, historyY, historyX);
 
     // Note: With the map centered, the side panels (Legend, Time, Stats)
     // might overlap the map if the terminal width is not large enough
@@ -151,6 +168,13 @@ void Gameplay::run() {
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
     startTime = std::chrono::steady_clock::now();
 
+    // Example: Simulate picking up the first package initially
+    if (num_pkg > 0) {
+         hasPackage[0] = true;
+         currentPackageIndex = 0; // Select the first package
+         addHistoryMessage("Picked up package 1.");
+    }
+
     while(current_state != GameState::MAIN_MENU) {
         getmaxyx(stdscr, height, width);
 
@@ -162,6 +186,7 @@ void Gameplay::run() {
         displayLegend();
         displayStaminaBar();
         displayHistory();
+        displayPackages();
 
         // Update all windows at once
         doupdate();
@@ -204,6 +229,53 @@ void Gameplay::run() {
                      addHistoryMessage("Stamina already full!");
                  }
                  break;
+
+            // --- Package Selection Test Input ---
+            case '1':
+                if (num_pkg >= 1) currentPackageIndex = 0;
+                addHistoryMessage("Selected package 1.");
+                break;
+            case '2':
+                if (num_pkg >= 2) currentPackageIndex = 1;
+                 addHistoryMessage("Selected package 2.");
+                break;
+            case '3':
+                if (num_pkg >= 3) currentPackageIndex = 2;
+                 addHistoryMessage("Selected package 3.");
+                break;
+            case '4':
+                if (num_pkg >= 4) currentPackageIndex = 3;
+                 addHistoryMessage("Selected package 4.");
+                break;
+            case '5':
+                if (num_pkg >= 5) currentPackageIndex = 4;
+                 addHistoryMessage("Selected package 5.");
+                break;
+            // Example Pickup/Drop Test. Fill in with actual game logic later.
+            case 'q': // Simulate picking up next available package
+                for(int i = 0; i < num_pkg; ++i) {
+                    if (!hasPackage[i]) {
+                        hasPackage[i] = true;
+                        currentPackageIndex = i;
+                        addHistoryMessage("Picked up package " + std::to_string(i+1) + ".");
+                        break;
+                    }
+                }
+                break;
+            case 'e': // Simulate dropping current package
+                if (currentPackageIndex != -1 && hasPackage[currentPackageIndex]) {
+                    hasPackage[currentPackageIndex] = false;
+                    addHistoryMessage("Dropped package " + std::to_string(currentPackageIndex+1) + ".");
+                    currentPackageIndex = -1; // Deselect after dropping
+                    for(int i = 0; i < num_pkg; ++i) { // Select first available, if any
+                        if (hasPackage[i]) {
+                            currentPackageIndex = i;
+                            break;
+                        }
+                    }
+                }
+                break;
+
             case ERR: // No input
                 break;
             // Other game input handling should be implemented here...
@@ -215,7 +287,6 @@ void Gameplay::run() {
         // For example, if stamina changed, you might want to check if the player can move or perform actions.
         // If stamina changed, the next loop iteration will redraw the bar.
         // Add other game logic updates here (e.g., move player, check collisions)
-
 
         napms(100);
     }
@@ -384,6 +455,62 @@ void Gameplay::displayHistory() {
 
 
     wnoutrefresh(historyWin);
+}
+
+void Gameplay::displayPackages() {
+    werase(packageWin);
+    box(packageWin, 0, 0);
+
+    // --- Title ---
+    const char* title = " Packages ";
+    mvwprintw(packageWin, 0, 2, title);
+
+    // --- Package Slot Display ---
+    const char* emptySlot = "_";
+
+    // On windows these circled characters are not working.
+    // So we will use numbers instead.
+    // I'm not sure if Linux supports these characters, but let's try.
+    // If not, we can use numbers as well.
+#ifdef _WIN32
+    const char* packageChars[] = {"1", "2", "3", "4", "5"};
+#else
+    const char* packageChars[] = {"①", "②", "③", "④", "⑤"};
+#endif
+
+    int startX = 2; // Starting column inside the box
+    int currentX = startX;
+    int yPos = 1; // Row inside the box
+
+    for (int i = 0; i < num_pkg; ++i) {
+        const char* displayChar = emptySlot;
+        if (hasPackage[i]) {
+            if (i < 5) {
+                displayChar = packageChars[i];
+            } else {
+                displayChar = "?"; // Fallback if more than 5 packages somehow
+            }
+        }
+
+        // Check for highlight
+        if (i == currentPackageIndex) {
+            wattron(packageWin, A_REVERSE); // Highlight the current package
+        }
+
+        // Print the character - mvwaddstr works for both single-byte and multi-byte chars
+        mvwaddstr(packageWin, yPos, currentX, displayChar);
+
+        // Turn off highlight if it was on
+        if (i == currentPackageIndex) {
+            wattroff(packageWin, A_REVERSE);
+        }
+
+        // Add spacing (adjust as needed for character width)
+        // Using 2 columns spacing should work reasonably for both cases
+        currentX += 2;
+    }
+
+    wnoutrefresh(packageWin);
 }
 
 // Function to add a message to the history
