@@ -92,9 +92,10 @@ void Gameplay::resizeWindows() {
     int mapX = std::max(0, (width - mapWidth) / 2);
 
     // --- Side Panel Widths ---
-    int legendWidth = width / 4;
-    int timeWidth = width / 4;
-    int statsWidth = width / 4;
+    int sidePanelWidth = width / 4;
+    int legendWidth = sidePanelWidth;
+    int timeWidth = sidePanelWidth;
+    int statsWidth = sidePanelWidth;
     int historyWidth = legendWidth;
 
     // --- Bottom Panel Heights ---
@@ -471,9 +472,10 @@ void Gameplay::displayHistory() {
     for (size_t i = startIdx; i < historyMessages.size(); ++i) {
         // Truncate message if too long for window width
         int maxWidth = getmaxx(historyWin) - 4;
+        maxWidth = std::max(0, maxWidth); // Ensure maxWidth is not negative
         std::string msg = historyMessages[i];
         if (msg.length() > maxWidth) {
-            msg = msg.substr(0, maxWidth);
+            msg.resize(maxWidth);
         }
         mvwprintw(historyWin, currentLine++, 2, msg.c_str());
     }
