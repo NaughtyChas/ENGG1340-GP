@@ -472,7 +472,7 @@ void Gameplay::displayHistory() {
     for (size_t i = startIdx; i < historyMessages.size(); ++i) {
         // Truncate message if too long for window width
         int maxWidth = getmaxx(historyWin) - 4;
-        maxWidth = std::max(0, maxWidth); // Ensure maxWidth is not negative
+        maxWidth = std::max(0, maxWidth);  // Ensure maxWidth is not negative
         std::string msg = historyMessages[i];
         if (msg.length() > maxWidth) {
             msg.resize(maxWidth);

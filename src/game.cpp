@@ -1,5 +1,4 @@
 #include "../include/game.h"
-#include "../include/gameplay.h"
 
 #include <ncurses.h>
 #include <string.h>
@@ -8,6 +7,8 @@
 #include <locale>
 #include <string>
 #include <vector>
+
+#include "../include/gameplay.h"
 
 // Include windows.h only on Windows platforms
 // Make sure that the window will be maximized on Windows
@@ -581,4 +582,3 @@ void Game::handleDifficultyInput(int choice) {
             break;
     }
 }
-
