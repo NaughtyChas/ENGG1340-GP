@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "../include/gameplay.h"
+
 // Include windows.h only on Windows platforms
 // Make sure that the window will be maximized on Windows
 #ifdef _WIN32
@@ -165,10 +167,10 @@ void Game::displayMenu() {
         "__/ __ `/  / / __ \\   / / / / __ \\/ __ \\/ __ `__ \\/ ___/ __  / __ `/ / / /",
         "  / /  / /  __/  / /_/ /  __/ / /| |/ /  __/ /  / / / / / /_/ /  / /| /  __/  __/ /_/ /_/ "
         "/  / / / / /  / /_/ / /_/ / /_/ / / / / / (__  ) /_/ / /_/ / /_/ / ",
-        "  /_/  /_/\\___/  /_____/\\___/_/_/ |___/\\___/_/  /_/_/ /_/\\__, /  /_/ "
+        " /_/  /_/\\___/  /_____/\\___/_/_/ |___/\\___/_/  /_/_/ /_/\\__, /  /_/ "
         "|_\\___/\\___/\\__/\\__,_/  /_/_/ /_/  /_____/\\____/\\____/_/ /_/ "
         "/_/____/\\__,_/\\__,_/\\__, /  ",
-        "                                                        /____/                            "
+        "                                                       /____/                            "
         "                                                           /____/   "};
     int rebirth_lines = sizeof(ascii_rebirth) / sizeof(ascii_rebirth[0]);
     int subtitle_lines = sizeof(ascii_subtitle) / sizeof(ascii_subtitle[0]);
@@ -447,26 +449,11 @@ void Game::waitForResize() {
     }
 }
 
-void Game::newGame(int difficulty) {
-    std::string diff_str;
-    switch (difficulty) {
-        case 0:
-            diff_str = "Easy";
-            break;
-        case 1:
-            diff_str = "Medium";
-            break;
-        case 2:
-            diff_str = "Hard";
-            break;
-        default:
-            diff_str = "Unknown";
-            break;
-    }
-    displayContent("Starting a new game on " + diff_str + " difficulty... (Gameplay TBD)");
+void Game::newGame(const int difficultyHighlight) {
     // TODO: Initialize game state based on difficulty (map size, packages, etc.)
     // TODO: Enter the actual game loop here (or elsewhere, I might be reconstructing it soon)
-    current_state = GameState::MAIN_MENU;  // Return to main menu for now
+    Gameplay gameplay(difficultyHighlight, current_state);
+    gameplay.run();
 }
 
 void Game::displayStats() {
