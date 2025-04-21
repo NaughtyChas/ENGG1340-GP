@@ -10,6 +10,7 @@
 #include <vector>  // Not used for now, but might be needed later
 
 #include "../include/game.h"
+#include "../include/player.h"
 
 // Constructor initializes windows based on difficulty
 Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
@@ -21,7 +22,10 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200),
-      currentPackageIndex(-1)  // Start with no package selected
+      currentPackageIndex(-1),  // Start with no package selected
+      staminaChanged(false),
+      staminaEmpty(false),
+      staminaFull(false)
 {
     switch (difficultyHighlight) {
         case 0:
@@ -49,6 +53,9 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
             num_pkg = 3;
             break;
     }
+
+    // Initialize player
+    player = new Player(this);
 
     hasPackage.resize(num_pkg, false);
 
@@ -218,7 +225,6 @@ void Gameplay::run() {
 
         // --- Basic Input Handling ---
         // Not that implemented yet.
-        bool staminaChanged = false;
         switch (ch) {
             case 27:
                 // TODO: might draw a new window to confirm exit
@@ -230,29 +236,11 @@ void Gameplay::run() {
                 clear();
                 refresh();
                 break;
-            case 'a':  // in case where the stamina is decreased
-                if (currentStamina > 0) {
-                    int oldStamina = currentStamina;
-                    currentStamina -= 10;  // Decrease by 10 for now, press a for testing
-                    currentStamina = std::max(0, currentStamina);
-                    staminaChanged = true;
-                    addHistoryMessage("Stamina decreased: " + std::to_string(oldStamina) + " -> " +
-                                      std::to_string(currentStamina));
-                } else {
-                    addHistoryMessage("Stamina already empty!");
-                }
+            case 'z':  // in case where the stamina is decreased
+                decreaseStamina(10);
                 break;
-            case 'd':  // Increase stamina
-                if (currentStamina < maxStamina) {
-                    int oldStamina = currentStamina;
-                    currentStamina += 10;  // Increase by 10 for now, also for testing
-                    currentStamina = std::min(maxStamina, currentStamina);
-                    staminaChanged = true;
-                    addHistoryMessage("Stamina increased: " + std::to_string(oldStamina) + " -> " +
-                                      std::to_string(currentStamina));  // Example message
-                } else {
-                    addHistoryMessage("Stamina already full!");
-                }
+            case 'x':  // Increase stamina
+                increaseStamina(10);
                 break;
 
             // --- Package Selection Test Input ---
@@ -307,10 +295,22 @@ void Gameplay::run() {
                 }
                 break;
 
+            // Movement handling
+            case 'w':
+                player->moveUp();
+                break;
+            case 's':
+                player->moveDown();
+                break;
+            case 'a':
+                player->moveLeft();
+                break;
+            case 'd':
+                player->moveRight();
+                break;
+                
             case ERR:  // No input
                 break;
-                // Other game input handling should be implemented here...
-                // W, A, S, D for movement, Q for package handling, etc.
         }
 
         // --- Game Logic Update ---
@@ -319,7 +319,7 @@ void Gameplay::run() {
         // perform actions. If stamina changed, the next loop iteration will redraw the bar. Add
         // other game logic updates here (e.g., move player, check collisions)
 
-        napms(100);
+        napms(10);
     }
 }
 
@@ -328,6 +328,10 @@ void Gameplay::displayMap() {
     werase(mapWin);
     box(mapWin, 0, 0);
     mvwprintw(mapWin, 0, 2, diff_str.c_str());
+
+    // Draw player
+    player->draw();
+
     wnoutrefresh(mapWin);
 }
 
@@ -548,4 +552,32 @@ void Gameplay::displayPackages() {
 // This function can be called from anywhere in the Gameplay class
 void Gameplay::addHistoryMessage(const std::string& message) {
     historyMessages.push_back(message);
+}
+
+void Gameplay::decreaseStamina(const int amount) {
+    if (currentStamina > 0) {
+        int oldStamina = currentStamina;
+        currentStamina -= amount;
+        staminaFull = false; // Other events may trigger this line
+        currentStamina = std::max(0, currentStamina);
+        staminaChanged = true;
+        addHistoryMessage("Stamina decreased: " + std::to_string(oldStamina) + " -> " +
+                          std::to_string(currentStamina));
+        if (currentStamina == 0)
+            staminaEmpty = true;
+    }
+}
+
+void Gameplay::increaseStamina(const int amount) {
+    if (currentStamina < maxStamina) {
+        int oldStamina = currentStamina;
+        currentStamina += amount;
+        staminaEmpty = false; // Other events may trigger this line
+        currentStamina = std::min(maxStamina, currentStamina);
+        staminaChanged = true;
+        addHistoryMessage("Stamina increased: " + std::to_string(oldStamina) + " -> " +
+                          std::to_string(currentStamina));  // Example message
+        if (currentStamina == maxStamina)
+            staminaFull = true;
+    }
 }

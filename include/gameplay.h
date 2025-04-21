@@ -5,7 +5,9 @@
 #include <string>
 #include <vector>
 #include <chrono>
+
 #include "game.h"
+#include "player.h"
 
 class Gameplay {
 public:
@@ -14,6 +16,14 @@ public:
     void run();
     // Not yet implemented
     void addHistoryMessage(const std::string& message);
+    void decreaseStamina(const int amount);
+    void increaseStamina(const int amount);
+
+    // Getter methods
+    WINDOW* getMapWindow() const { return mapWin; }
+    int getMapSize() const { return map_size; }
+    bool getStaminaEmpty() const { return staminaEmpty; }
+    bool getStaminaFull() const { return staminaFull; }
 
 private:
     // Member Variables
@@ -27,8 +37,12 @@ private:
     int roundNumber;
     int currentStamina;
     int maxStamina;
+    bool staminaChanged; // Not sure if really need this
+    bool staminaEmpty;
+    bool staminaFull;
     std::vector<std::string> historyMessages; // To store messages
     std::chrono::steady_clock::time_point startTime;
+    Player* player; // Create player 
 
     // Package Tracking
     std::vector<bool> hasPackage;

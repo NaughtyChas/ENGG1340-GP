@@ -14,9 +14,9 @@ INCLUDE_DIR = include
 
 TARGET = $(BIN_DIR)/main
 
-OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/game.o $(BUILD_DIR)/gameplay.o
+OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/game.o $(BUILD_DIR)/gameplay.o $(BUILD_DIR)/player.o
 
-SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/game.cpp $(SRC_DIR)/gameplay.cpp
+SRCS = $(SRC_DIR)/main.cpp $(SRC_DIR)/game.cpp $(SRC_DIR)/gameplay.cpp $(SRC_DIR)/player.cpp
 
 all: install-ncurses directories $(TARGET)
 
@@ -40,6 +40,9 @@ $(BUILD_DIR)/game.o: $(SRC_DIR)/game.cpp $(INCLUDE_DIR)/game.h $(INCLUDE_DIR)/ga
 
 $(BUILD_DIR)/gameplay.o: $(SRC_DIR)/gameplay.cpp $(INCLUDE_DIR)/game.h $(INCLUDE_DIR)/gameplay.h
 	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/gameplay.cpp -o $(BUILD_DIR)/gameplay.o
+
+$(BUILD_DIR)/player.o: $(SRC_DIR)/player.cpp $(INCLUDE_DIR)/gameplay.h $(INCLUDE_DIR)/player.h
+	$(CXX) $(CXXFLAGS) -c $(SRC_DIR)/player.cpp -o $(BUILD_DIR)/player.o
 
 clean:
 	rm -rf $(BUILD_DIR)/*.o $(TARGET)
