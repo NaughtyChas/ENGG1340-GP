@@ -4,13 +4,88 @@
 
 #include <chrono>  // For timing
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 #include <iomanip>
 #include <sstream>
 #include <string>
 #include <vector>  // Not used for now, but might be needed later
 
 #include "../include/game.h"
-#include "../include/player.h"
+
+// Map initialization helper functions
+void Gameplay::initializeMap() {
+    mapGrid.assign(map_size, std::string(map_size, '.'));
+
+    // Top and Bottom borders
+    for (int x = 0; x < map_size; ++x) {
+        mapGrid[0][x] = '-';
+        mapGrid[map_size - 1][x] = '-';
+        // I have gave up using window drawing here, since it is not working well
+        // The playarea is having a hardtime aligning with the window borders
+        // Character "-" has space in between when displaying multiple of it in a row,
+        // suggest fiding a better character to use for borders
+    }
+    // Left and Right borders
+    for (int y = 1; y < map_size - 1; ++y) {
+        mapGrid[y][0] = '|';
+        mapGrid[y][map_size - 1] = '|';
+    }
+    // Corners
+    mapGrid[0][0] = '+';
+    mapGrid[0][map_size - 1] = '+';
+    mapGrid[map_size - 1][0] = '+';
+    mapGrid[map_size - 1][map_size - 1] = '+';
+    // Or you can use special characters for each of the four corners, 
+    // if Linux terminal can support it
+
+
+    // Seed
+    srand(time(0));
+
+    // Place Player
+    playerY = map_size / 2;
+    playerX = 1;
+
+    // Place Exit (Inside Borders)
+    // Ensure exit is not on the border itself
+    mapGrid[map_size / 2][map_size - 2] = 'Q'; // Place just inside the right border
+
+    // Place Obstacles
+    // Currently placeholder, as the obstacle placement is being scattered on the map, not as intended.
+    // Use for previewing
+
+    int obstaclesPlaced = 0;
+    while (obstaclesPlaced < num_obs) {
+        int y = (rand() % (map_size - 2)) + 1;
+        int x = (rand() % (map_size - 2)) + 1;
+        // Ensure not placing on player start or exit
+        if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX) && !(y == map_size / 2 && x == map_size - 2)) {
+            mapGrid[y][x] = '#';
+            obstaclesPlaced++;
+        }
+    }
+
+    // Place Packages
+    // Also placeholder. Refine placement later.
+    // Use for previewing
+
+
+    int packagesToPlace = num_pkg;
+    int packagesPlaced = 0;
+    while (packagesPlaced < packagesToPlace) {
+         int y = (rand() % (map_size - 2)) + 1;
+         int x = (rand() % (map_size - 2)) + 1;
+         if (mapGrid[y][x] == '.') {
+             mapGrid[y][x] = 'O';
+             packagesPlaced++;
+         }
+    }
+
+    // Place Supplies
+    // Place Speed Bumps
+    // Will be written later
+}
 
 // Constructor initializes windows based on difficulty
 Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
@@ -22,10 +97,7 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200),
-      currentPackageIndex(-1),  // Start with no package selected
-      staminaChanged(false),
-      staminaEmpty(false),
-      staminaFull(false)
+      currentPackageIndex(-1)  // Start with no package selected
 {
     switch (difficultyHighlight) {
         case 0:
@@ -54,10 +126,10 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
             break;
     }
 
-    // Initialize player
-    player = new Player(this);
-
     hasPackage.resize(num_pkg, false);
+
+    // Initialize the map grid
+    initializeMap();
 
     nodelay(stdscr, TRUE);
     getmaxyx(stdscr, height, width);
@@ -183,6 +255,102 @@ void Gameplay::resizeWindows() {
     mvwin(packageWin, packageY, packageX);
 }
 
+// --- Input handling ---
+void Gameplay::handleInput(int ch) {
+    int nextY = playerY;
+    int nextX = playerX;
+    bool moved = false;
+
+    switch (ch) {
+        case 'w': // Move Up
+        case KEY_UP: // Also handle arrow key
+            nextY--;
+            moved = true;
+            break;
+        case 's': // Move Down
+        case KEY_DOWN:
+            nextY++;
+            moved = true;
+            break;
+        case 'a': // Move Left
+        case KEY_LEFT:
+            nextX--;
+            moved = true;
+            break;
+        case 'd': // Move Right
+        case KEY_RIGHT:
+            nextX++;
+            moved = true;
+            break;
+
+        // --- Keep other input handling ---
+        case 27: // ESC
+            addHistoryMessage("Exiting to main menu...");
+            current_state = GameState::MAIN_MENU;
+            break;
+        case KEY_RESIZE:
+            addHistoryMessage("Terminal resized.");
+            clear();
+            refresh();
+            break;
+
+        // --- Package Selection ---
+        case '1': if (num_pkg >= 1) currentPackageIndex = 0; addHistoryMessage("Selected package 1."); break;
+        case '2': if (num_pkg >= 2) currentPackageIndex = 1; addHistoryMessage("Selected package 2."); break;
+        case '3': if (num_pkg >= 3) currentPackageIndex = 2; addHistoryMessage("Selected package 3."); break;
+        case '4': if (num_pkg >= 4) currentPackageIndex = 3; addHistoryMessage("Selected package 4."); break;
+        case '5': if (num_pkg >= 5) currentPackageIndex = 4; addHistoryMessage("Selected package 5."); break;
+
+        // --- Package Pickup/Drop ---
+        // No pickup / drop implemented yet.
+        case 'q':
+             addHistoryMessage("Pressed Q (Pickup - Placeholder)");
+             break;
+        case 'e':
+             addHistoryMessage("Pressed E (Drop - Placeholder)");
+             break;
+
+        case ERR:
+            break;
+
+        default:
+            break;
+    }
+
+    // --- Process Movement ---
+    if (moved) {
+        // Check Boundaries
+        if (nextY > 0 && nextY < map_size - 1 && nextX > 0 && nextX < map_size - 1) {
+            // Check Obstacles
+            if (mapGrid[nextY][nextX] != '#') {
+                // Check Stamina
+                // I think in the original game design, goal is to end the game when stamina is 0
+                if (currentStamina > 0) {
+                    int oldStamina = currentStamina;
+                    currentStamina--;
+                    currentStamina = std::max(0, currentStamina);
+
+                    // Update Player Position
+                    playerY = nextY;
+                    playerX = nextX;
+
+                    addHistoryMessage("Moved. Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
+
+                    // TODO: Check for landing on items
+                    // if (mapGrid[playerY][playerX] == 'Q') { [win condition here] }
+
+                } else {
+                    addHistoryMessage("Cannot move! Out of stamina.");
+                }
+            } else {
+                addHistoryMessage("Cannot move! Blocked by obstacle.");
+            }
+        } else {
+            addHistoryMessage("Cannot move! Hit the border.");
+        }
+    }
+}
+
 void Gameplay::run() {
     // Clear remnants from mainWindow
     clear();
@@ -193,6 +361,11 @@ void Gameplay::run() {
         start_color();
         init_pair(1, COLOR_YELLOW, COLOR_BLACK);
         init_pair(2, COLOR_CYAN, COLOR_BLACK);
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);
+        // 3 used for dots indicating empty spaces.
+        // Alternatively, try grey if available, if blue does not look great: 
+        // init_pair(3, COLOR_BLACK + 8, COLOR_BLACK);
+        // This may not work on our terminals so suggest testing on CS servers.
     }
 
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
@@ -223,114 +396,64 @@ void Gameplay::run() {
 
         int ch = getch();
 
-        // --- Basic Input Handling ---
-        // Not that implemented yet.
-        switch (ch) {
-            case 27:
-                // TODO: might draw a new window to confirm exit
-                addHistoryMessage("Exiting to main menu...");  // Example message
-                current_state = GameState::MAIN_MENU;
-                return;
-            case KEY_RESIZE:
-                addHistoryMessage("Terminal resized.");  // Example message
-                clear();
-                refresh();
-                break;
-            case 'z':  // in case where the stamina is decreased
-                decreaseStamina(10);
-                break;
-            case 'x':  // Increase stamina
-                increaseStamina(10);
-                break;
+        // Handle Input
+        handleInput(ch);
 
-            // --- Package Selection Test Input ---
-            case '1':
-                if (num_pkg >= 1)
-                    currentPackageIndex = 0;
-                addHistoryMessage("Selected package 1.");
-                break;
-            case '2':
-                if (num_pkg >= 2)
-                    currentPackageIndex = 1;
-                addHistoryMessage("Selected package 2.");
-                break;
-            case '3':
-                if (num_pkg >= 3)
-                    currentPackageIndex = 2;
-                addHistoryMessage("Selected package 3.");
-                break;
-            case '4':
-                if (num_pkg >= 4)
-                    currentPackageIndex = 3;
-                addHistoryMessage("Selected package 4.");
-                break;
-            case '5':
-                if (num_pkg >= 5)
-                    currentPackageIndex = 4;
-                addHistoryMessage("Selected package 5.");
-                break;
-            // Example Pickup/Drop Test. Fill in with actual game logic later.
-            case 'q':  // Simulate picking up next available package
-                for (int i = 0; i < num_pkg; ++i) {
-                    if (!hasPackage[i]) {
-                        hasPackage[i] = true;
-                        currentPackageIndex = i;
-                        addHistoryMessage("Picked up package " + std::to_string(i + 1) + ".");
-                        break;
-                    }
-                }
-                break;
-            case 'e':  // Simulate dropping current package
-                if (currentPackageIndex != -1 && hasPackage[currentPackageIndex]) {
-                    hasPackage[currentPackageIndex] = false;
-                    addHistoryMessage("Dropped package " + std::to_string(currentPackageIndex + 1) +
-                                      ".");
-                    currentPackageIndex = -1;            // Deselect after dropping
-                    for (int i = 0; i < num_pkg; ++i) {  // Select first available, if any
-                        if (hasPackage[i]) {
-                            currentPackageIndex = i;
-                            break;
-                        }
-                    }
-                }
-                break;
-
-            // Movement handling
-            case 'w':
-                player->moveUp();
-                break;
-            case 's':
-                player->moveDown();
-                break;
-            case 'a':
-                player->moveLeft();
-                break;
-            case 'd':
-                player->moveRight();
-                break;
-                
-            case ERR:  // No input
-                break;
+        // Check if state changed
+        if (current_state == GameState::MAIN_MENU) {
+             break;
         }
-
-        // --- Game Logic Update ---
-        // Wrote these comments to remind you to add game logic updates here.
-        // For example, if stamina changed, you might want to check if the player can move or
-        // perform actions. If stamina changed, the next loop iteration will redraw the bar. Add
-        // other game logic updates here (e.g., move player, check collisions)
-
-        napms(10);
+        napms(50);
     }
 }
 
 // Display functions
 void Gameplay::displayMap() {
     werase(mapWin);
-    box(mapWin, 0, 0);
-    mvwprintw(mapWin, 0, 2, diff_str.c_str());
 
-    // Draw player
-    player->draw();
+    // Get window dimensions
+    int maxY = getmaxy(mapWin);
+    int maxX = getmaxx(mapWin);
+
+    // Draw Map Content
+    for (int y = 0; y < map_size; ++y) {
+        for (int x = 0; x < map_size; ++x) {
+            int winY = y;
+            int winX = x * 2;
+            if (winY >= 0 && winY < maxY && winX >= 0 && winX < maxX -1)
+            {
+                 char displayChar = mapGrid[y][x];
+                 bool applyColor = false;
+
+                 // Apply color for '.'
+                 if (displayChar == '.') {
+                     wattron(mapWin, COLOR_PAIR(3));
+                     applyColor = true;
+                 }
+                 // Add else if blocks here for other character colors 
+                 // e.g., obstacles, packages
+
+                 mvwaddch(mapWin, winY, winX, displayChar);
+
+                 if (applyColor) {
+                     wattroff(mapWin, COLOR_PAIR(3));
+                 }
+            }
+        }
+    }
+
+    // Draw Player
+    int playerWinY = playerY;
+    int playerWinX = playerX * 2;
+
+    // Check if player position is within the window bounds
+     if (playerWinY >= 0 && playerWinY < maxY &&
+         playerWinX >= 0 && playerWinX < maxX -1)
+     {
+        wattron(mapWin, COLOR_PAIR(2) | A_BOLD);
+        mvwaddch(mapWin, playerWinY, playerWinX, '@');
+        wattroff(mapWin, COLOR_PAIR(2) | A_BOLD);
+     }
 
     wnoutrefresh(mapWin);
 }
@@ -552,32 +675,4 @@ void Gameplay::displayPackages() {
 // This function can be called from anywhere in the Gameplay class
 void Gameplay::addHistoryMessage(const std::string& message) {
     historyMessages.push_back(message);
-}
-
-void Gameplay::decreaseStamina(const int amount) {
-    if (currentStamina > 0) {
-        int oldStamina = currentStamina;
-        currentStamina -= amount;
-        staminaFull = false; // Other events may trigger this line
-        currentStamina = std::max(0, currentStamina);
-        staminaChanged = true;
-        addHistoryMessage("Stamina decreased: " + std::to_string(oldStamina) + " -> " +
-                          std::to_string(currentStamina));
-        if (currentStamina == 0)
-            staminaEmpty = true;
-    }
-}
-
-void Gameplay::increaseStamina(const int amount) {
-    if (currentStamina < maxStamina) {
-        int oldStamina = currentStamina;
-        currentStamina += amount;
-        staminaEmpty = false; // Other events may trigger this line
-        currentStamina = std::min(maxStamina, currentStamina);
-        staminaChanged = true;
-        addHistoryMessage("Stamina increased: " + std::to_string(oldStamina) + " -> " +
-                          std::to_string(currentStamina));  // Example message
-        if (currentStamina == maxStamina)
-            staminaFull = true;
-    }
 }
