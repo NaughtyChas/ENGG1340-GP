@@ -34,6 +34,10 @@ private:
     std::vector<bool> hasPackage;
     int currentPackageIndex;
 
+    // Gameplay Map & Player
+    std::vector<std::string> mapGrid;
+    int playerY, playerX;
+
     // Windows
     WINDOW *mapWin;
     WINDOW *statsWin;
@@ -44,6 +48,7 @@ private:
     WINDOW *packageWin;
 
     // Private Methods
+    void initializeMap();
     void resizeWindows();
     void displayMap();
     void displayStats();
@@ -54,6 +59,7 @@ private:
     // TBD
     void displayHistory();
     void displayPackages();
+    void handleInput(int ch);
 };
 
 #endif
