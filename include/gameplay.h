@@ -31,12 +31,14 @@ private:
     std::chrono::steady_clock::time_point startTime;
 
     // Package Tracking
-    std::vector<bool> hasPackage;
-    int currentPackageIndex;
+    std::vector<bool> hasPackage; // Tracks if player is holding package i
+    int currentPackageIndex;      // Index (0 to num_pkg-1) of selected package, -1 if none
+    int packagesDelivered;
 
     // Gameplay Map & Player
     std::vector<std::string> mapGrid;
     int playerY, playerX;
+    int exitY, exitX;
 
     // Windows
     WINDOW *mapWin;

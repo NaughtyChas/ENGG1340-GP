@@ -10,6 +10,9 @@
 #include <sstream>
 #include <string>
 #include <vector>  // Not used for now, but might be needed later
+#include <utility>
+#include <algorithm>
+#include <set>
 
 #include "../include/game.h"
 
@@ -43,13 +46,18 @@ void Gameplay::initializeMap() {
     // Seed
     srand(time(0));
 
-    // Place Player
+    // Reset Delivered Count for New Round
+    packagesDelivered = 0;
+
+    // Define Player Start and Exit Locations
     playerY = map_size / 2;
     playerX = 1;
+    exitY = map_size / 2;
+    exitX = map_size - 2;
+    mapGrid[exitY][exitX] = 'Q'; // Place exit marker
 
-    // Place Exit (Inside Borders)
-    // Ensure exit is not on the border itself
-    mapGrid[map_size / 2][map_size - 2] = 'Q'; // Place just inside the right border
+    // Determine package locations (protected)
+    std::vector<std::pair<int, int>> packageLocations;
 
     // Place Obstacles
     // Currently placeholder, as the obstacle placement is being scattered on the map, not as intended.
@@ -60,7 +68,7 @@ void Gameplay::initializeMap() {
         int y = (rand() % (map_size - 2)) + 1;
         int x = (rand() % (map_size - 2)) + 1;
         // Ensure not placing on player start or exit
-        if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX) && !(y == map_size / 2 && x == map_size - 2)) {
+        if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX) && !(y == exitY && x == exitX)) {
             mapGrid[y][x] = '#';
             obstaclesPlaced++;
         }
@@ -82,9 +90,8 @@ void Gameplay::initializeMap() {
          }
     }
 
-    // Place Supplies
-    // Place Speed Bumps
-    // Will be written later
+    // Place Supplies / Speed Bumps
+    // Pass this to you Hyper-aceX :)
 }
 
 // Constructor initializes windows based on difficulty
@@ -97,7 +104,10 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200),
-      currentPackageIndex(-1)  // Start with no package selected
+      currentPackageIndex(-1),
+      packagesDelivered(0),
+      playerY(0), playerX(0),
+      exitY(0), exitX(0)
 {
     switch (difficultyHighlight) {
         case 0:
@@ -210,9 +220,14 @@ void Gameplay::resizeWindows() {
 
     // --- Side Panel Heights & Positions ---
     // Left Side
-    int legendHeight = std::min(height - bottomPanelHeight, height / 2);
+    int minLegendHeight = 26;
+    int desiredLegendHeight = std::min(height - bottomPanelHeight, height / 2);
+    int legendHeight = std::max(minLegendHeight, desiredLegendHeight); // Ensure minimum height
+    legendHeight = std::min(height - bottomPanelHeight, legendHeight); // Don't exceed available space above bottom bar
+
     int legendX = 0;
     int legendY = 0;
+
     // --- History Window ---
     int historyY = legendHeight;
     int historyHeight = std::max(1, height - legendHeight - bottomPanelHeight);
@@ -283,15 +298,32 @@ void Gameplay::handleInput(int ch) {
             moved = true;
             break;
 
-        // --- Keep other input handling ---
-        case 27: // ESC
-            addHistoryMessage("Exiting to main menu...");
-            current_state = GameState::MAIN_MENU;
-            break;
-        case KEY_RESIZE:
-            addHistoryMessage("Terminal resized.");
-            clear();
-            refresh();
+        // --- Exit Interaction ---
+        case '\n':      // Enter key
+        case KEY_ENTER: // Ncurses specific Enter key
+            if (playerY == exitY && playerX == exitX) {
+                // Check if all packages are delivered
+                if (packagesDelivered >= num_pkg) {
+                    roundNumber++;
+                    addHistoryMessage("Level Complete! Proceeding to Round " + std::to_string(roundNumber) + "...");
+                    initializeMap(); // Regenerate map, reset player pos, reset delivered count
+                    // Considering adding a screen pause here for user to read the message
+
+                    // Reset package holding status
+                    std::fill(hasPackage.begin(), hasPackage.end(), false);
+                    currentPackageIndex = -1;
+
+                    // Add score bonus, reset timer bonus, etc. here later
+
+                } else {
+                    addHistoryMessage("Cannot exit yet! Deliver all packages first. ("
+                                      + std::to_string(packagesDelivered) + "/"
+                                      + std::to_string(num_pkg) + " delivered)");
+                }
+            } else {
+                // Optional: Message if Enter pressed not at exit
+                // addHistoryMessage("Press Enter only at the exit 'Q'.");
+            }
             break;
 
         // --- Package Selection ---
@@ -304,11 +336,40 @@ void Gameplay::handleInput(int ch) {
         // --- Package Pickup/Drop ---
         // No pickup / drop implemented yet.
         case 'q':
+             // TODO: Implement actual pickup logic
              addHistoryMessage("Pressed Q (Pickup - Placeholder)");
              break;
         case 'e':
-             addHistoryMessage("Pressed E (Drop - Placeholder)");
+             // TODO: Implement actual drop logic (at destination)
+             // For now use 'e' to simulate delivering the current package
+             if (currentPackageIndex != -1 && hasPackage[currentPackageIndex]) {
+                 int pkgIdx = currentPackageIndex;
+                 addHistoryMessage("Delivered package " + std::to_string(pkgIdx + 1) + " (Placeholder).");
+                 hasPackage[pkgIdx] = false;
+                 packagesDelivered++;
+
+                 // Find next held package or set to -1
+                 currentPackageIndex = -1;
+                 for(int i = 0; i < num_pkg; ++i) {
+                     if(hasPackage[i]) {
+                         currentPackageIndex = i;
+                         break;
+                     }
+                 }
+             } else {
+                 addHistoryMessage("No package selected to deliver.");
+             }
              break;
+
+        case 27: // ESC
+            addHistoryMessage("Exiting to main menu...");
+            current_state = GameState::MAIN_MENU;
+            break;
+        case KEY_RESIZE:
+            addHistoryMessage("Terminal resized.");
+            clear();
+            refresh();
+            break;
 
         case ERR:
             break;
@@ -536,7 +597,8 @@ void Gameplay::displayLegend() {
 
     // --- Game Controls ---
     mvwprintw(legendWin, row++, col, "---- Game ----");
-    mvwprintw(legendWin, row++, col, " ESC: Pause");
+    mvwprintw(legendWin, row++, col, " Enter: Next Level (at Q,all pkgs delivered)");
+    mvwprintw(legendWin, row++, col, "   ESC: Pause");
     mvwprintw(legendWin, row++, col, " Hold ESC: Quit");
 
     wnoutrefresh(legendWin);
