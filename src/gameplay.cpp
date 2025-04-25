@@ -787,11 +787,7 @@ void Gameplay::displayPackages() {
     // --- Package Slot Display ---
     const char* emptySlot = "_";
 
-#ifdef _WIN32
     const char* packageChars[] = {"1", "2", "3", "4", "5"};
-#else
-    const char* packageChars[] = {"①", "②", "③", "④", "⑤"};
-#endif
 
     int startX = 2;
     int currentX = startX;
