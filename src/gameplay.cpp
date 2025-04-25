@@ -70,6 +70,25 @@ void Gameplay::initializeMap() {
         if (r == playerY && c == playerX) return true;
         return false;
     };
+    auto isValidObstacle = [&](int r, int c) {
+        if (!(r > 1 && r < map_size - 2 && c > 1 && c < map_size - 2))
+            return false;
+
+        // Check surrounding 3 by 3 grid for existing obstacles
+        for (int dr = -1; dr < 2; dr++) {
+            for (int dc = -1; dc < 2; dc++) {
+                int nr = r + dr;
+                int nc = c + dc;
+
+                if (nr >= 0 && nr < map_size && nc >= 0 && nc < map_size) {
+                    if (mapGrid[nr][nc] == '#')
+                        return false;
+                }
+            }
+        }
+
+        return true;
+    };
 
     // Generate Package Pickup Locations
     int packagesPlaced = 0;
@@ -114,13 +133,57 @@ void Gameplay::initializeMap() {
     }
 
     // Obstacle Generation
-    int obstaclesPlacedCount = 0;
-    while (obstaclesPlacedCount < num_obs) {
-        int y = (rand() % (map_size - 2)) + 1;
-        int x = (rand() % (map_size - 2)) + 1;
-        if (!isOccupiedOrProtected(y, x)) {
-            mapGrid[y][x] = '#';
-            obstaclesPlacedCount++;
+    int obstaclePlaced = 0;
+    
+    int numObstaclesToPlace = 4; // Default Easy
+    int maxObstacleLength = 5;
+    int minObstacleLength = 3;
+
+    if (difficultyHighlight == 1) { // Medium
+        numObstaclesToPlace = 5;
+        minObstacleLength = 7;
+        maxObstacleLength = 10;
+    } else if (difficultyHighlight == 2) { // Hard
+        numObstaclesToPlace = 6;
+        minObstacleLength = 10;
+        maxObstacleLength = 15;
+    }
+
+    int maxPlacementAttempts = map_size * map_size * 2; // Limit attempts
+    int placementAttempts = 0;
+
+    while (obstaclePlaced < numObstaclesToPlace && placementAttempts < maxPlacementAttempts) {
+        placementAttempts++;
+        bool horizontal = (rand() % 2 == 0); // Random orientation
+        int len = minObstacleLength + (rand() % (maxObstacleLength - minObstacleLength + 1)); // Random length
+
+        // Random starting point within inner bounds
+        int startY = (rand() % (map_size - len - 2)) + 1;
+        int startX = (rand() % (map_size - len - 2)) + 1;
+
+        bool canPlace = true;
+        std::vector<std::pair<int, int>> currentObstacleCoords; // Coords for this potential obstacle
+
+        // Check if the entire obstacle fits and is on empty ground
+        for (int i = 0; i < len; ++i) {
+            int currentY = startY + (horizontal ? 0 : i);
+            int currentX = startX + (horizontal ? i : 0);
+
+            // Check bounds and if the spot is empty '.'
+            if (!isValidObstacle(currentY, currentX) || mapGrid[currentY][currentX] != '.') {
+                canPlace = false;
+                break; // Stop checking this potential obstacle
+            }
+            currentObstacleCoords.push_back({currentY, currentX});
+        }
+
+        // If the spot is valid, place the obstacle
+        if (canPlace) {
+            for (const auto& coord : currentObstacleCoords) {
+                mapGrid[coord.first][coord.second] = '#';
+            }
+
+            obstaclePlaced++;
         }
     }
 
