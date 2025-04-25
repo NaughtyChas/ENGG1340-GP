@@ -145,49 +145,82 @@ void Gameplay::initializeMap() {
     }
 
     // --- Place Speed Bumps [~] ---
-    speedBumpLocations.clear(); // Clear locations from previous round
-    int numSpeedBumpsToPlace = 3;
-    int bumpsPlaced = 0;
-    int maxBumpLength = 2; // Default Easy
-    if (difficultyHighlight == 1) maxBumpLength = 4; // Medium
-    else if (difficultyHighlight == 2) maxBumpLength = 6; // Hard
+    // Define speed bump parameters based on difficulty
+    int numPatches;
+    int minY, maxY;
+    int minX, maxX;
 
-    int maxPlacementAttempts = map_size * map_size * 2; // Limit attempts
-    int placementAttempts = 0;
+    switch (difficultyHighlight) {
+        case 0: // Easy
+            numPatches = 2 + (rand() % 2); // 2-3 patches
+            minY = 2;
+            maxY = 4;
+            minX = 2;
+            maxX = 4;
+            break;
+        
+        case 1: // Medium
+            numPatches = 3 + (rand() % 2); // 3-4 patches
+            minY = 3;
+            maxY = 5;
+            minX = 3;
+            maxX = 5;
+            break;
 
-    while (bumpsPlaced < numSpeedBumpsToPlace && placementAttempts < maxPlacementAttempts) {
-        placementAttempts++;
-        bool horizontal = (rand() % 2 == 0); // Random orientation
-        int len = maxBumpLength; // Use the length for the current difficulty
+        case 2: // Hard
+            numPatches = 4 + (rand() % 2); // 4-5 patches
+            minY = 4;
+            maxY = 6;
+            minX = 4;
+            maxX = 6;
+            break;
 
-        // Random starting point within inner bounds
-        int startY = (rand() % (map_size - 2)) + 1;
-        int startX = (rand() % (map_size - 2)) + 1;
+        default:
+            numPatches = 2 + (rand() % 2);
+            minY = 1;
+            maxY = 4;
+            minX = 2;
+            maxX = 4;
+            break;
+    }
 
-        bool canPlace = true;
-        std::vector<std::pair<int, int>> currentBumpCoords; // Coords for this potential bump
+    int patchesPlaced = 0;
+    int maxAttempts = map_size * map_size * 2; // Limit attempts
+    int attempts = 0;
 
-        // Check if the entire bump fits and is on empty ground
-        for (int i = 0; i < len; ++i) {
-            int currentY = startY + (horizontal ? 0 : i);
-            int currentX = startX + (horizontal ? i : 0);
+    while (patchesPlaced < numPatches && attempts < maxAttempts) {
+        attempts++;
 
-            // Check bounds and if the spot is empty '.'
-            if (!isValidInner(currentY, currentX) || mapGrid[currentY][currentX] != '.') {
-                canPlace = false;
-                break; // Stop checking this potential bump
+        // Generate row number
+        int patchRows = minY + (rand() % (maxY - minY + 1));
+
+        // Generate patch starting position
+        int patchStartY = (rand() % (map_size - patchRows - 2)) + 1;
+        int patchStartX = (rand() % (map_size - maxX - 2)) + 1;
+
+        bool placedPatch = false;
+
+        for (int row = 0; row < patchRows; row++) {
+            // Randomize starting x with slight offset
+            int rowStartX = patchStartX + rand() % 3; // 0, 1 or 2 offset
+
+            // Generate row length
+            int rowLength = minX + (rand() % (maxX - minX + 1));
+
+            for (int col = 0; col < rowLength; col++) {
+                int y = patchStartY + row;
+                int x = rowStartX + col;
+
+                // Draw in mapGrid is position is valid
+                if (!isOccupiedOrProtected(y, x)) {
+                    mapGrid[y][x] = '~';
+                    placedPatch = true;
+                }
             }
-            currentBumpCoords.push_back({currentY, currentX});
         }
 
-        // If the spot is valid, place the bump
-        if (canPlace) {
-            for (const auto& coord : currentBumpCoords) {
-                mapGrid[coord.first][coord.second] = '~';
-                speedBumpLocations.push_back(coord); // Store location of this segment
-            }
-            bumpsPlaced++;
-        }
+        if (placedPatch)
+            patchesPlaced++;
     }
 }
 
