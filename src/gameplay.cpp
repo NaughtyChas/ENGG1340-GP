@@ -144,7 +144,51 @@ void Gameplay::initializeMap() {
         supplyAttempts++;
     }
 
-    // Speed Bumps here
+    // --- Place Speed Bumps [~] ---
+    speedBumpLocations.clear(); // Clear locations from previous round
+    int numSpeedBumpsToPlace = 3;
+    int bumpsPlaced = 0;
+    int maxBumpLength = 2; // Default Easy
+    if (difficultyHighlight == 1) maxBumpLength = 4; // Medium
+    else if (difficultyHighlight == 2) maxBumpLength = 6; // Hard
+
+    int maxPlacementAttempts = map_size * map_size * 2; // Limit attempts
+    int placementAttempts = 0;
+
+    while (bumpsPlaced < numSpeedBumpsToPlace && placementAttempts < maxPlacementAttempts) {
+        placementAttempts++;
+        bool horizontal = (rand() % 2 == 0); // Random orientation
+        int len = maxBumpLength; // Use the length for the current difficulty
+
+        // Random starting point within inner bounds
+        int startY = (rand() % (map_size - 2)) + 1;
+        int startX = (rand() % (map_size - 2)) + 1;
+
+        bool canPlace = true;
+        std::vector<std::pair<int, int>> currentBumpCoords; // Coords for this potential bump
+
+        // Check if the entire bump fits and is on empty ground
+        for (int i = 0; i < len; ++i) {
+            int currentY = startY + (horizontal ? 0 : i);
+            int currentX = startX + (horizontal ? i : 0);
+
+            // Check bounds and if the spot is empty '.'
+            if (!isValidInner(currentY, currentX) || mapGrid[currentY][currentX] != '.') {
+                canPlace = false;
+                break; // Stop checking this potential bump
+            }
+            currentBumpCoords.push_back({currentY, currentX});
+        }
+
+        // If the spot is valid, place the bump
+        if (canPlace) {
+            for (const auto& coord : currentBumpCoords) {
+                mapGrid[coord.first][coord.second] = '~';
+                speedBumpLocations.push_back(coord); // Store location of this segment
+            }
+            bumpsPlaced++;
+        }
+    }
 }
 
 // Constructor initializes windows based on difficulty
@@ -162,7 +206,8 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       playerY(0), playerX(0),
       exitY(0), exitX(0),
       isSupplyActive(false),
-      supplyStationY(-1), supplyStationX(-1)
+      supplyStationY(-1), supplyStationX(-1),
+      doubleStaminaCostNextMove(false)
 {
     switch (difficultyHighlight) {
         case 0:
@@ -495,18 +540,25 @@ void Gameplay::handleInput(int ch) {
         if (nextY > 0 && nextY < map_size - 1 && nextX > 0 && nextX < map_size - 1) {
             // Check Obstacles
             if (mapGrid[nextY][nextX] != '#') {
-                // Check Stamina
-                // I think in the original game design, goal is to end the game when stamina is 0
-                if (currentStamina > 0) {
+
+                // --- Calculate Stamina Cost ---
+                int moveCost = 1;
+                if (doubleStaminaCostNextMove) {
+                    moveCost *= 2;
+                    doubleStaminaCostNextMove = false; // Consume the flag *before* checking stamina
+                }
+
+                // Check Stamina (using calculated cost)
+                if (currentStamina >= moveCost) {
                     int oldStamina = currentStamina;
-                    currentStamina--;
+                    currentStamina -= moveCost;
                     currentStamina = std::max(0, currentStamina);
 
                     // Update Player Position
                     playerY = nextY;
                     playerX = nextX;
 
-                    addHistoryMessage("Moved. Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
+                    addHistoryMessage("Moved. Cost: " + std::to_string(moveCost) + ". Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
 
                     // --- Check for landing on Supply Station ---
                     if (isSupplyActive && playerY == supplyStationY &&
@@ -526,17 +578,32 @@ void Gameplay::handleInput(int ch) {
                         isSupplyActive = false;
                     }
 
-                    // Check for landing on Speed Bumps later
+                    // --- Check for landing on Speed Bump ---
+                    // Check the character at the *new* player position
+                    if (mapGrid[playerY][playerX] == '~') {
+                         if (!doubleStaminaCostNextMove) {
+                             addHistoryMessage("Stepped on a speed bump! Next move costs double.");
+                             doubleStaminaCostNextMove = true;
+                         }
+                    }
 
                 } else {
-                    addHistoryMessage("Cannot move! Out of stamina.");
-                    // We can write game over logic here
+                    addHistoryMessage("Cannot move! Need " + std::to_string(moveCost) + " stamina, have " + std::to_string(currentStamina) + ".");
+                    if (moveCost > 1) doubleStaminaCostNextMove = true;
                 }
-            } else {
+            } else { // Hit obstacle
                 addHistoryMessage("Cannot move! Blocked by obstacle.");
+                // If player intended a double-cost move but hit a wall, reset the flag
+                if (doubleStaminaCostNextMove) {
+                    doubleStaminaCostNextMove = false;
+                }
             }
         } else {
             addHistoryMessage("Cannot move! Hit the border.");
+            // If player intended a double-cost move but hit border, reset the flag
+            if (doubleStaminaCostNextMove) {
+                doubleStaminaCostNextMove = false;
+            }
         }
     }
 }
@@ -560,6 +627,7 @@ void Gameplay::run() {
         init_pair(7, COLOR_MAGENTA, COLOR_BLACK); // Package 4
         init_pair(8, COLOR_CYAN, COLOR_BLACK);    // Package 5
         init_pair(9, COLOR_WHITE, COLOR_BLACK);   // Supply Station [$]
+        init_pair(10, COLOR_YELLOW, COLOR_BLACK); // Speed Bump [~]
     }
 
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
@@ -635,6 +703,8 @@ void Gameplay::displayMap() {
                      if (isSupplyActive && y == supplyStationY && x >= supplyStationX && x <= supplyStationX + 2) {
                          colorPair = 9; // Apply supply station color
                      }
+                 } else if (displayChar == '~') {
+                     colorPair = 10;
                  }
 
                  if (colorPair > 0) {
@@ -719,6 +789,7 @@ void Gameplay::displayLegend() {
     mvwprintw(legendWin, row++, col, "--- Legend ---");
     mvwprintw(legendWin, row++, col, " @: Player");
     mvwprintw(legendWin, row++, col, " #: Obstacle");
+    mvwprintw(legendWin, row++, col, " ~: Speed Bump");
     mvwprintw(legendWin, row++, col, " [$]: Supply Station");
     mvwprintw(legendWin, row++, col, " O: Package");
     mvwprintw(legendWin, row++, col, " X: Destination");

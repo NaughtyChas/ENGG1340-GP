@@ -44,6 +44,8 @@ private:
     std::vector<std::pair<int, int>> packageDestLocs;
     bool isSupplyActive;
     int supplyStationY, supplyStationX;
+    std::vector<std::pair<int, int>> speedBumpLocations;
+    bool doubleStaminaCostNextMove;
 
     // Windows
     WINDOW *mapWin;
