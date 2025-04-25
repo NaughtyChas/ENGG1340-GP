@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
+#include <utility>
 #include "game.h"
 
 class Gameplay {
@@ -39,6 +40,8 @@ private:
     std::vector<std::string> mapGrid;
     int playerY, playerX;
     int exitY, exitX;
+    std::vector<std::pair<int, int>> packagePickUpLocs;
+    std::vector<std::pair<int, int>> packageDestLocs;
 
     // Windows
     WINDOW *mapWin;

@@ -48,6 +48,10 @@ void Gameplay::initializeMap() {
 
     // Reset Delivered Count for New Round
     packagesDelivered = 0;
+    packagePickUpLocs.clear();
+    packageDestLocs.clear();
+    packagePickUpLocs.resize(num_pkg);
+    packageDestLocs.resize(num_pkg);
 
     // Define Player Start and Exit Locations
     playerY = map_size / 2;
@@ -56,38 +60,68 @@ void Gameplay::initializeMap() {
     exitX = map_size - 2;
     mapGrid[exitY][exitX] = 'Q'; // Place exit marker
 
-    // Determine package locations (protected)
-    std::vector<std::pair<int, int>> packageLocations;
+    // Helper Lambdas
+    auto isValidInner = [&](int r, int c) {
+        return r > 0 && r < map_size - 1 && c > 0 && c < map_size - 1;
+    };
+    auto isOccupiedOrProtected = [&](int r, int c) {
+        if (!isValidInner(r, c)) return true;
+        if (mapGrid[r][c] != '.') return true;
+        if (r == playerY && c == playerX) return true;
+        return false;
+    };
 
-    // Place Obstacles
-    // Currently placeholder, as the obstacle placement is being scattered on the map, not as intended.
-    // Use for previewing
-
-    int obstaclesPlaced = 0;
-    while (obstaclesPlaced < num_obs) {
+    // Generate Package Pickup Locations
+    int packagesPlaced = 0;
+    while (packagesPlaced < num_pkg) {
         int y = (rand() % (map_size - 2)) + 1;
         int x = (rand() % (map_size - 2)) + 1;
-        // Ensure not placing on player start or exit
-        if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX) && !(y == exitY && x == exitX)) {
-            mapGrid[y][x] = '#';
-            obstaclesPlaced++;
+        if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX)) {
+            bool already_chosen = false;
+            for (int i = 0; i < packagesPlaced; ++i) {
+                if (packagePickUpLocs[i].first == y && packagePickUpLocs[i].second == x) {
+                    already_chosen = true;
+                    break;
+                }
+            }
+            if (!already_chosen) {
+                packagePickUpLocs[packagesPlaced] = {y, x};
+                mapGrid[y][x] = 'O';
+                packagesPlaced++;
+            }
         }
     }
 
-    // Place Packages
-    // Also placeholder. Refine placement later.
-    // Use for previewing
+    // Generate Corresponding Destination Locations
+    int destinationsPlaced = 0;
+    while (destinationsPlaced < num_pkg) {
+        int y = (rand() % (map_size - 2)) + 1;
+        int x = (rand() % (map_size - 2)) + 1;
+        if (mapGrid[y][x] == '.') {
+            bool already_chosen = false;
+            for (int i = 0; i < destinationsPlaced; ++i) {
+                if (packageDestLocs[i].first == y && packageDestLocs[i].second == x) {
+                    already_chosen = true;
+                    break;
+                }
+            }
+            if (!already_chosen) {
+                packageDestLocs[destinationsPlaced] = {y, x};
+                mapGrid[y][x] = 'X';
+                destinationsPlaced++;
+            }
+        }
+    }
 
-
-    int packagesToPlace = num_pkg;
-    int packagesPlaced = 0;
-    while (packagesPlaced < packagesToPlace) {
-         int y = (rand() % (map_size - 2)) + 1;
-         int x = (rand() % (map_size - 2)) + 1;
-         if (mapGrid[y][x] == '.') {
-             mapGrid[y][x] = 'O';
-             packagesPlaced++;
-         }
+    // Obstacle Generation
+    int obstaclesPlacedCount = 0;
+    while (obstaclesPlacedCount < num_obs) {
+        int y = (rand() % (map_size - 2)) + 1;
+        int x = (rand() % (map_size - 2)) + 1;
+        if (!isOccupiedOrProtected(y, x)) {
+            mapGrid[y][x] = '#';
+            obstaclesPlacedCount++;
+        }
     }
 
     // Place Supplies / Speed Bumps
@@ -333,33 +367,89 @@ void Gameplay::handleInput(int ch) {
         case '4': if (num_pkg >= 4) currentPackageIndex = 3; addHistoryMessage("Selected package 4."); break;
         case '5': if (num_pkg >= 5) currentPackageIndex = 4; addHistoryMessage("Selected package 5."); break;
 
-        // --- Package Pickup/Drop ---
-        // No pickup / drop implemented yet.
+        // --- Package Pickup ---
         case 'q':
-             // TODO: Implement actual pickup logic
-             addHistoryMessage("Pressed Q (Pickup - Placeholder)");
-             break;
-        case 'e':
-             // TODO: Implement actual drop logic (at destination)
-             // For now use 'e' to simulate delivering the current package
-             if (currentPackageIndex != -1 && hasPackage[currentPackageIndex]) {
-                 int pkgIdx = currentPackageIndex;
-                 addHistoryMessage("Delivered package " + std::to_string(pkgIdx + 1) + " (Placeholder).");
-                 hasPackage[pkgIdx] = false;
-                 packagesDelivered++;
+            {
+                bool foundPackage = false;
+                for (int i = 0; i < num_pkg; ++i) {
+                    // Check if player is at pickup location i AND it's still on the map
+                    if (playerY == packagePickUpLocs[i].first && playerX == packagePickUpLocs[i].second && mapGrid[playerY][playerX] == 'O') {
+                        if (!hasPackage[i]) {
+                            hasPackage[i] = true;
+                            mapGrid[playerY][playerX] = '.';
+                            currentPackageIndex = i;
+                            addHistoryMessage("Picked up package " + std::to_string(i + 1) + ".");
+                            foundPackage = true;
+                        } else {
+                            addHistoryMessage("Already holding package " + std::to_string(i + 1) + ".");
+                            foundPackage = true;
+                        }
+                        break;
+                    }
+                }
+                if (!foundPackage && mapGrid[playerY][playerX] == 'O') {
+                     addHistoryMessage("Error: Package 'O' found but no matching location data.");
+                } else if (!foundPackage) {
+                     addHistoryMessage("No package to pick up here.");
+                }
+            }
+            break;
 
-                 // Find next held package or set to -1
-                 currentPackageIndex = -1;
-                 for(int i = 0; i < num_pkg; ++i) {
-                     if(hasPackage[i]) {
-                         currentPackageIndex = i;
-                         break;
-                     }
-                 }
-             } else {
-                 addHistoryMessage("No package selected to deliver.");
-             }
-             break;
+        // --- Package Drop ---
+        case 'e':
+            // Check if a package is selected and held
+            if (currentPackageIndex != -1 && hasPackage[currentPackageIndex]) {
+                int pkgIdx = currentPackageIndex;
+
+                // --- Prevent dropping at the exit location ---
+                if (playerY == exitY && playerX == exitX) {
+                    addHistoryMessage("Cannot drop packages at the exit 'Q'.");
+                }
+                // --- Check if the current location is empty ground '.' ---
+                else if (mapGrid[playerY][playerX] == '.') {
+                    // Drop the package
+                    addHistoryMessage("Dropped package " + std::to_string(pkgIdx + 1) + ".");
+                    hasPackage[pkgIdx] = false;
+                    mapGrid[playerY][playerX] = 'O';
+
+                    // Update the pickup location to the drop location
+                    // This ensures the correct color is shown and it can be picked up again
+                    packagePickUpLocs[pkgIdx] = {playerY, playerX};
+
+                    // Find next held package or set to -1
+                    currentPackageIndex = -1;
+                    for(int i = 0; i < num_pkg; ++i) {
+                        if(hasPackage[i]) {
+                            currentPackageIndex = i;
+                            break;
+                        }
+                    }
+                }
+                // --- Check if trying to drop at the correct destination 'X' ---
+                else if (playerY == packageDestLocs[pkgIdx].first && playerX == packageDestLocs[pkgIdx].second && mapGrid[playerY][playerX] == 'X') {
+                    // Deliver the package
+                    addHistoryMessage("Delivered package " + std::to_string(pkgIdx + 1) + "!");
+                    hasPackage[pkgIdx] = false;
+                    packagesDelivered++;
+                    mapGrid[playerY][playerX] = '.';
+
+                    // Find next held package or set to -1
+                    currentPackageIndex = -1;
+                    for(int i = 0; i < num_pkg; ++i) {
+                        if(hasPackage[i]) {
+                            currentPackageIndex = i;
+                            break;
+                        }
+                    }
+                    // Add score in the future
+                }
+                else {
+                    addHistoryMessage("Cannot drop package here. Location occupied.");
+                }
+            } else {
+                addHistoryMessage("No package selected/held to drop.");
+            }
+            break;
 
         case 27: // ESC
             addHistoryMessage("Exiting to main menu...");
@@ -420,24 +510,20 @@ void Gameplay::run() {
     // Initialize colors if not done elsewhere (ensure start_color() was called)
     if (has_colors()) {
         start_color();
-        init_pair(1, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(2, COLOR_CYAN, COLOR_BLACK);
-        init_pair(3, COLOR_BLUE, COLOR_BLACK);
-        // 3 used for dots indicating empty spaces.
-        // Alternatively, try grey if available, if blue does not look great: 
-        // init_pair(3, COLOR_BLACK + 8, COLOR_BLACK);
-        // This may not work on our terminals so suggest testing on CS servers.
+        init_pair(1, COLOR_YELLOW, COLOR_BLACK); // Stamina Bar
+        init_pair(2, COLOR_CYAN, COLOR_BLACK);   // Player
+        init_pair(3, COLOR_BLUE, COLOR_BLACK);   // Background dots '.'
+
+        // --- Package/Destination Colors (Pairs 4-8) ---
+        init_pair(4, COLOR_RED, COLOR_BLACK);     // Package 1
+        init_pair(5, COLOR_GREEN, COLOR_BLACK);   // Package 2
+        init_pair(6, COLOR_YELLOW, COLOR_BLACK);  // Package 3
+        init_pair(7, COLOR_MAGENTA, COLOR_BLACK); // Package 4
+        init_pair(8, COLOR_CYAN, COLOR_BLACK);    // Package 5
     }
 
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
     startTime = std::chrono::steady_clock::now();
-
-    // Example: Simulate picking up the first package initially
-    if (num_pkg > 0) {
-        hasPackage[0] = true;
-        currentPackageIndex = 0;  // Select the first package
-        addHistoryMessage("Picked up package 1.");
-    }
 
     while (current_state != GameState::MAIN_MENU) {
         getmaxyx(stdscr, height, width);
@@ -484,37 +570,50 @@ void Gameplay::displayMap() {
             if (winY >= 0 && winY < maxY && winX >= 0 && winX < maxX -1)
             {
                  char displayChar = mapGrid[y][x];
-                 bool applyColor = false;
+                 int colorPair = 0;
 
-                 // Apply color for '.'
                  if (displayChar == '.') {
-                     wattron(mapWin, COLOR_PAIR(3));
-                     applyColor = true;
+                     colorPair = 3;
+                 } else if (displayChar == 'O') {
+                     for (int i = 0; i < num_pkg; ++i) {
+                         if (packagePickUpLocs[i].first == y && packagePickUpLocs[i].second == x) {
+                             colorPair = 4 + i; // Assign color pair
+                             break;
+                         }
+                     }
+                 } else if (displayChar == 'X') {
+                     // Find which destination this is
+                     for (int i = 0; i < num_pkg; ++i) {
+                         if (packageDestLocs[i].first == y && packageDestLocs[i].second == x) {
+                             colorPair = 4 + i; // Assign color pair
+                             break;
+                         }
+                     }
                  }
-                 // Add else if blocks here for other character colors 
-                 // e.g., obstacles, packages
+
+                 if (colorPair > 0) {
+                     wattron(mapWin, COLOR_PAIR(colorPair));
+                 }
 
                  mvwaddch(mapWin, winY, winX, displayChar);
 
-                 if (applyColor) {
-                     wattroff(mapWin, COLOR_PAIR(3));
+                 // Turn off color
+                 if (colorPair > 0) {
+                     wattroff(mapWin, COLOR_PAIR(colorPair));
                  }
             }
         }
     }
 
-    // Draw Player
+    // Draw Player (using color pair 2)
     int playerWinY = playerY;
     int playerWinX = playerX * 2;
-
-    // Check if player position is within the window bounds
-     if (playerWinY >= 0 && playerWinY < maxY &&
-         playerWinX >= 0 && playerWinX < maxX -1)
-     {
+    if (playerWinY >= 0 && playerWinY < maxY && playerWinX >= 0 && playerWinX < maxX -1)
+    {
         wattron(mapWin, COLOR_PAIR(2) | A_BOLD);
         mvwaddch(mapWin, playerWinY, playerWinX, '@');
         wattroff(mapWin, COLOR_PAIR(2) | A_BOLD);
-     }
+    }
 
     wnoutrefresh(mapWin);
 }
@@ -683,45 +782,55 @@ void Gameplay::displayPackages() {
 
     // --- Title ---
     const char* title = " Packages ";
-    mvwprintw(packageWin, 0, 2, title);
+    mvwprintw(packageWin, 0, 2, "%s", title);
 
     // --- Package Slot Display ---
     const char* emptySlot = "_";
 
-    // On windows these circled characters are not working.
-    // So we will use numbers instead.
-    // I'm not sure if Linux supports these characters, but let's try.
-    // If not, we can use numbers as well.
 #ifdef _WIN32
     const char* packageChars[] = {"1", "2", "3", "4", "5"};
 #else
     const char* packageChars[] = {"①", "②", "③", "④", "⑤"};
 #endif
 
-    int startX = 2;  // Starting column inside the box
+    int startX = 2;
     int currentX = startX;
-    int yPos = 1;  // Row inside the box
+    int yPos = 1;
 
     for (int i = 0; i < num_pkg; ++i) {
         const char* displayChar = emptySlot;
+        int colorPair = 0;
+
         if (hasPackage[i]) {
             if (i < 5) {
                 displayChar = packageChars[i];
             } else {
                 displayChar = "?";  // Fallback if more than 5 packages somehow
             }
+            colorPair = 4 + i;
         }
 
-        // Check for highlight
-        if (i == currentPackageIndex) {
-            wattron(packageWin, A_REVERSE);  // Highlight the current package
+        // Check for highlight (selected package)
+        bool isHighlighted = (i == currentPackageIndex);
+        if (isHighlighted) {
+            wattron(packageWin, A_REVERSE);
+        }
+
+        // Apply color if holding the package
+        if (colorPair > 0) {
+            wattron(packageWin, COLOR_PAIR(colorPair));
         }
 
         // Print the character - mvwaddstr works for both single-byte and multi-byte chars
         mvwaddstr(packageWin, yPos, currentX, displayChar);
 
+        // Turn off color if it was applied
+        if (colorPair > 0) {
+            wattroff(packageWin, COLOR_PAIR(colorPair));
+        }
+
         // Turn off highlight if it was on
-        if (i == currentPackageIndex) {
+        if (isHighlighted) {
             wattroff(packageWin, A_REVERSE);
         }
 
