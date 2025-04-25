@@ -124,8 +124,27 @@ void Gameplay::initializeMap() {
         }
     }
 
-    // Place Supplies / Speed Bumps
-    // Pass this to you Hyper-aceX :)
+    // --- Place Supply Station [$] ---
+    isSupplyActive = false;
+    int supplyAttempts = 0;
+    int maxSupplyAttempts = map_size * map_size;
+
+    while (!isSupplyActive && supplyAttempts < maxSupplyAttempts) {
+        int y = (rand() % (map_size - 2)) + 1;
+        int x = (rand() % (map_size - 4)) + 1;
+
+        if (mapGrid[y][x] == '.' && mapGrid[y][x+1] == '.' && mapGrid[y][x+2] == '.') {
+            mapGrid[y][x]   = '[';
+            mapGrid[y][x+1] = '$';
+            mapGrid[y][x+2] = ']';
+            supplyStationY = y;
+            supplyStationX = x;
+            isSupplyActive = true;
+        }
+        supplyAttempts++;
+    }
+
+    // Speed Bumps here
 }
 
 // Constructor initializes windows based on difficulty
@@ -141,7 +160,9 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       currentPackageIndex(-1),
       packagesDelivered(0),
       playerY(0), playerX(0),
-      exitY(0), exitX(0)
+      exitY(0), exitX(0),
+      isSupplyActive(false),
+      supplyStationY(-1), supplyStationX(-1)
 {
     switch (difficultyHighlight) {
         case 0:
@@ -487,11 +508,29 @@ void Gameplay::handleInput(int ch) {
 
                     addHistoryMessage("Moved. Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
 
-                    // TODO: Check for landing on items
-                    // if (mapGrid[playerY][playerX] == 'Q') { [win condition here] }
+                    // --- Check for landing on Supply Station ---
+                    if (isSupplyActive && playerY == supplyStationY &&
+                        (playerX >= supplyStationX && playerX <= supplyStationX + 2))
+                    {
+                        int staminaGain = (rand() % 31) + 20; // Ranging to 20-50
+                        int oldStaminaBeforeGain = currentStamina;
+                        currentStamina = std::min(maxStamina, currentStamina + staminaGain);
+                        addHistoryMessage("Supply opened! +" + std::to_string(staminaGain) + " stamina. ("
+                                          + std::to_string(oldStaminaBeforeGain) + "->" + std::to_string(currentStamina) + ")");
+
+                        // Remove da shiny supply station from the map
+                        mapGrid[supplyStationY][supplyStationX]   = '.';
+                        mapGrid[supplyStationY][supplyStationX+1] = '.';
+                        mapGrid[supplyStationY][supplyStationX+2] = '.';
+
+                        isSupplyActive = false;
+                    }
+
+                    // Check for landing on Speed Bumps later
 
                 } else {
                     addHistoryMessage("Cannot move! Out of stamina.");
+                    // We can write game over logic here
                 }
             } else {
                 addHistoryMessage("Cannot move! Blocked by obstacle.");
@@ -520,6 +559,7 @@ void Gameplay::run() {
         init_pair(6, COLOR_YELLOW, COLOR_BLACK);  // Package 3
         init_pair(7, COLOR_MAGENTA, COLOR_BLACK); // Package 4
         init_pair(8, COLOR_CYAN, COLOR_BLACK);    // Package 5
+        init_pair(9, COLOR_WHITE, COLOR_BLACK);   // Supply Station [$]
     }
 
     addHistoryMessage("Game Started. Round " + std::to_string(roundNumber));
@@ -572,6 +612,7 @@ void Gameplay::displayMap() {
                  char displayChar = mapGrid[y][x];
                  int colorPair = 0;
 
+                 // Determine color based on character
                  if (displayChar == '.') {
                      colorPair = 3;
                  } else if (displayChar == 'O') {
@@ -588,6 +629,11 @@ void Gameplay::displayMap() {
                              colorPair = 4 + i; // Assign color pair
                              break;
                          }
+                     }
+                 } else if (displayChar == '[' || displayChar == '$' || displayChar == ']') {
+                     // Check if it's part of the active supply station
+                     if (isSupplyActive && y == supplyStationY && x >= supplyStationX && x <= supplyStationX + 2) {
+                         colorPair = 9; // Apply supply station color
                      }
                  }
 
@@ -673,9 +719,9 @@ void Gameplay::displayLegend() {
     mvwprintw(legendWin, row++, col, "--- Legend ---");
     mvwprintw(legendWin, row++, col, " @: Player");
     mvwprintw(legendWin, row++, col, " #: Obstacle");
-    mvwprintw(legendWin, row++, col, " ~: Speed Bump");
-    mvwprintw(legendWin, row++, col, " $: Supply");
+    mvwprintw(legendWin, row++, col, " [$]: Supply Station");
     mvwprintw(legendWin, row++, col, " O: Package");
+    mvwprintw(legendWin, row++, col, " X: Destination");
     mvwprintw(legendWin, row++, col, " Q: Exit");
     row++;
 

@@ -42,6 +42,8 @@ private:
     int exitY, exitX;
     std::vector<std::pair<int, int>> packagePickUpLocs;
     std::vector<std::pair<int, int>> packageDestLocs;
+    bool isSupplyActive;
+    int supplyStationY, supplyStationX;
 
     // Windows
     WINDOW *mapWin;
