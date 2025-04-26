@@ -286,6 +286,9 @@ void Gameplay::initializeMap() {
         if (placedPatch)
             patchesPlaced++;
     }
+
+    stepsTakenThisRound = 0;
+    startTime = std::chrono::steady_clock::now();
 }
 
 // Constructor initializes windows based on difficulty
@@ -298,6 +301,7 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200),
+      stepsTakenThisRound(0),
       currentPackageIndex(-1),
       packagesDelivered(0),
       playerY(0), playerX(0),
@@ -501,14 +505,32 @@ void Gameplay::handleInput(int ch) {
             if (playerY == exitY && playerX == exitX) {
                 // Check if all packages are delivered
                 if (packagesDelivered >= num_pkg) {
-                    // --- Add Stamina Reward ---
+                    // --- Calculate Stats ---
                     int staminaReward = 50;
                     int oldStamina = currentStamina;
-                    currentStamina = std::min(maxStamina, currentStamina + staminaReward);
+                    int finalStamina = std::min(maxStamina, currentStamina + staminaReward);
+                    int staminaUsed = (200 - oldStamina);
+                    auto now = std::chrono::steady_clock::now();
+                    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+                    long long timeTaken = elapsed.count();
+
+                    // --- Prepare Popup Message ---
+                    std::vector<std::string> popupLines;
+                    popupLines.push_back("Round " + std::to_string(roundNumber) + " Complete!");
+                    popupLines.push_back("");
+                    popupLines.push_back("Time Taken: " + std::to_string(timeTaken) + "s");
+                    popupLines.push_back("Steps Taken: " + std::to_string(stepsTakenThisRound));
+                    popupLines.push_back("Stamina Used: " + std::to_string(staminaUsed));
+                    popupLines.push_back("Stamina Bonus: +" + std::to_string(staminaReward));
+                    popupLines.push_back("Score: (Not Implemented)");
+
+                    // --- Display Popup ---
+                    displayPopupMessage("Level Complete", popupLines);
+
+                    // --- Apply Reward and Proceed ---
+                    currentStamina = finalStamina; // Apply reward *after* showing stats
                     addHistoryMessage("Level Complete! +" + std::to_string(staminaReward) + " stamina bonus. ("
                                       + std::to_string(oldStamina) + "->" + std::to_string(currentStamina) + ")");
-
-                    // --- Proceed to Next Level ---
                     roundNumber++;
                     addHistoryMessage("Proceeding to Round " + std::to_string(roundNumber) + "...");
                     initializeMap(); // Regenerate map, reset player pos, reset delivered count
@@ -669,6 +691,7 @@ void Gameplay::handleInput(int ch) {
                     // Update Player Position
                     playerY = nextY;
                     playerX = nextX;
+                    stepsTakenThisRound++;
 
                     addHistoryMessage("Moved. Cost: " + std::to_string(finalMoveCost) + ". Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
 
@@ -700,8 +723,25 @@ void Gameplay::handleInput(int ch) {
 
                     // --- Check for Game Over (Stamina Depleted AFTER move) ---
                     if (currentStamina <= 0) {
+
+                        // --- Prepare Popup Message ---
+                        auto now = std::chrono::steady_clock::now();
+                        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+                        long long timeTaken = elapsed.count();
+
+                        std::vector<std::string> popupLines;
+                        popupLines.push_back("You ran out of stamina!");
+                        popupLines.push_back("");
+                        popupLines.push_back("Round Reached: " + std::to_string(roundNumber));
+                        popupLines.push_back("Time This Round: " + std::to_string(timeTaken) + "s");
+                        popupLines.push_back("Steps This Round: " + std::to_string(stepsTakenThisRound));
+                        popupLines.push_back("Total Score: (Not Implemented)");
+
+                        // --- Display Popup ---
+                        displayPopupMessage("Game Over", popupLines);
+
+                        // --- Set Game State ---
                         addHistoryMessage("GAME OVER! You ran out of stamina.");
-                        // For now, just return to main menu. Consider a dedicated GAME_OVER state later.
                         current_state = GameState::MAIN_MENU;
                         return; // Exit handleInput early
                     }
@@ -720,9 +760,27 @@ void Gameplay::handleInput(int ch) {
 
                     // If stamina is positive, but can't afford the move AND cannot drop a package, it's game over.
                     if (currentStamina > 0 && !canDrop) {
-                         addHistoryMessage("GAME OVER! Stuck with no possible moves.");
-                         current_state = GameState::MAIN_MENU;
-                         return; // Exit handleInput early
+                        // --- Prepare Popup Message ---
+                        auto now = std::chrono::steady_clock::now();
+                        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+                        long long timeTaken = elapsed.count();
+
+                        std::vector<std::string> popupLines;
+                        popupLines.push_back("You got stuck with no possible moves!");
+                        popupLines.push_back("(Not enough stamina to move, cannot drop package)");
+                        popupLines.push_back("");
+                        popupLines.push_back("Round Reached: " + std::to_string(roundNumber));
+                        popupLines.push_back("Time This Round: " + std::to_string(timeTaken) + "s");
+                        popupLines.push_back("Steps This Round: " + std::to_string(stepsTakenThisRound));
+                        popupLines.push_back("Total Score: (Not Implemented)");
+
+                        // --- Display Popup ---
+                        displayPopupMessage("Game Over", popupLines);
+
+                        // --- Set Game State ---
+                        addHistoryMessage("GAME OVER! Stuck with no possible moves.");
+                        current_state = GameState::MAIN_MENU;
+                        return;
                     }
                     // --- End Softlock Check ---
 
@@ -1152,4 +1210,73 @@ bool Gameplay::invalidDestinationDistance(const int& y, const int& x, const int&
     int currentDistance = std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
 
     return currentDistance < minDistance;
+}
+
+void Gameplay::displayPopupMessage(const std::string& title, const std::vector<std::string>& lines) {
+    // --- Padding ---
+    const int horizontalPadding = 3;
+    const int verticalPadding = 1;
+
+    // --- Calculate window dimensions ---
+    int maxTextLength = title.length();
+    for (const std::string& line : lines) {
+        if (line.length() > maxTextLength) {
+            maxTextLength = line.length();
+        }
+    }
+    std::string continuePrompt = "Press any key to continue...";
+    if (continuePrompt.length() > maxTextLength) {
+        maxTextLength = continuePrompt.length();
+    }
+
+    int popupHeight = 1 + verticalPadding + lines.size() + verticalPadding + 1 + 1;
+    int popupWidth = 1 + horizontalPadding + maxTextLength + horizontalPadding + 1;
+
+    // Ensure dimensions are valid and don't exceed screen size
+    popupHeight = std::min(popupHeight, height);
+    popupWidth = std::min(popupWidth, width);
+    popupHeight = std::max(5, popupHeight);
+    popupWidth = std::max(static_cast<int>(title.length()) + (horizontalPadding * 2) + 2, popupWidth);
+    popupWidth = std::max(static_cast<int>(continuePrompt.length()) + (horizontalPadding * 2) + 2, popupWidth);
+
+    // --- Position the window near the top ---
+    int popupY = 1;
+    int popupX = std::max(0, (width - popupWidth) / 2);
+
+    // --- Create the window ---
+    WINDOW *popupWin = newwin(popupHeight, popupWidth, popupY, popupX);
+    keypad(popupWin, TRUE);
+    box(popupWin, 0, 0);
+
+    // --- Display Title (Centered within padding) ---
+    int titleX = std::max(horizontalPadding + 1, (popupWidth - static_cast<int>(title.length())) / 2);
+    wattron(popupWin, A_BOLD);
+    mvwprintw(popupWin, 1 + verticalPadding, titleX, "%s", title.c_str());
+    wattroff(popupWin, A_BOLD);
+
+    // --- Display Message Lines ---
+    int textStartX = 1 + horizontalPadding;
+    int currentLineY = 1 + verticalPadding + 1;
+    for (const std::string& line : lines) {
+        if (currentLineY < popupHeight - (1 + verticalPadding + 1)) {
+             std::string truncatedLine = line;
+             int maxDisplayWidth = popupWidth - (horizontalPadding * 2) - 2;
+             if (truncatedLine.length() > maxDisplayWidth) {
+                 truncatedLine.resize(maxDisplayWidth);
+             }
+             mvwprintw(popupWin, currentLineY++, textStartX, "%s", truncatedLine.c_str());
+        }
+    }
+
+    // --- Display Continue Prompt ---
+    int promptY = popupHeight - 1 - 1;
+    int promptX = std::max(horizontalPadding + 1, (popupWidth - static_cast<int>(continuePrompt.length())) / 2);
+    mvwprintw(popupWin, promptY, promptX, "%s", continuePrompt.c_str());
+    wrefresh(popupWin);
+    wgetch(popupWin);
+    delwin(popupWin);
+
+    // Touch the main screen and refresh to redraw the underlying game state cleanly
+    touchwin(stdscr);
+    refresh();
 }

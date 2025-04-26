@@ -29,6 +29,7 @@ private:
     int roundNumber;
     int currentStamina;
     int maxStamina;
+    int stepsTakenThisRound; // Add step counter for the current round
     std::vector<std::string> historyMessages; // To store messages
     std::chrono::steady_clock::time_point startTime;
 
@@ -70,6 +71,7 @@ private:
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);
+    void displayPopupMessage(const std::string& title, const std::vector<std::string>& lines); // Declare popup function
 
     // Helper functions
     bool invalidPackageDistance(const int& y, const int& x, const int& i);
