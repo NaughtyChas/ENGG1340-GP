@@ -29,7 +29,8 @@ private:
     int roundNumber;
     int currentStamina;
     int maxStamina;
-    int stepsTakenThisRound; // Add step counter for the current round
+    int staminaAtRoundStart;
+    int stepsTakenThisRound;
     std::vector<std::string> historyMessages; // To store messages
     std::chrono::steady_clock::time_point startTime;
 

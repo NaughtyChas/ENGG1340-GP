@@ -301,6 +301,7 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       roundNumber(1),
       currentStamina(200),
       maxStamina(200),
+      staminaAtRoundStart(200),
       stepsTakenThisRound(0),
       currentPackageIndex(-1),
       packagesDelivered(0),
@@ -509,7 +510,8 @@ void Gameplay::handleInput(int ch) {
                     int staminaReward = 50;
                     int oldStamina = currentStamina;
                     int finalStamina = std::min(maxStamina, currentStamina + staminaReward);
-                    int staminaUsed = (200 - oldStamina);
+                    int staminaUsedThisRound = std::max(0, staminaAtRoundStart - oldStamina);
+
                     auto now = std::chrono::steady_clock::now();
                     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
                     long long timeTaken = elapsed.count();
@@ -520,7 +522,7 @@ void Gameplay::handleInput(int ch) {
                     popupLines.push_back("");
                     popupLines.push_back("Time Taken: " + std::to_string(timeTaken) + "s");
                     popupLines.push_back("Steps Taken: " + std::to_string(stepsTakenThisRound));
-                    popupLines.push_back("Stamina Used: " + std::to_string(staminaUsed));
+                    popupLines.push_back("Stamina Used: " + std::to_string(staminaUsedThisRound));
                     popupLines.push_back("Stamina Bonus: +" + std::to_string(staminaReward));
                     popupLines.push_back("Score: (Not Implemented)");
 
@@ -528,19 +530,17 @@ void Gameplay::handleInput(int ch) {
                     displayPopupMessage("Level Complete", popupLines);
 
                     // --- Apply Reward and Proceed ---
-                    currentStamina = finalStamina; // Apply reward *after* showing stats
+                    currentStamina = finalStamina;
+                    staminaAtRoundStart = currentStamina;
                     addHistoryMessage("Level Complete! +" + std::to_string(staminaReward) + " stamina bonus. ("
                                       + std::to_string(oldStamina) + "->" + std::to_string(currentStamina) + ")");
                     roundNumber++;
                     addHistoryMessage("Proceeding to Round " + std::to_string(roundNumber) + "...");
-                    initializeMap(); // Regenerate map, reset player pos, reset delivered count
+                    initializeMap();
 
-                    // Reset package holding status
                     std::fill(hasPackage.begin(), hasPackage.end(), false);
                     currentPackageIndex = -1;
-                    doubleStaminaCostNextMove = false; // Reset speed bump flag for new level
-
-                    // Add score bonus, reset timer bonus, etc. here later
+                    doubleStaminaCostNextMove = false;
 
                 } else {
                     addHistoryMessage("Cannot exit yet! Deliver all packages first. ("
