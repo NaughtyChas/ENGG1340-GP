@@ -698,7 +698,7 @@ void Gameplay::handleInput(int ch) {
                          }
                     }
 
-                    // --- Check for Game Over (Stamina Depleted) ---
+                    // --- Check for Game Over (Stamina Depleted AFTER move) ---
                     if (currentStamina <= 0) {
                         addHistoryMessage("GAME OVER! You ran out of stamina.");
                         // For now, just return to main menu. Consider a dedicated GAME_OVER state later.
@@ -706,9 +706,27 @@ void Gameplay::handleInput(int ch) {
                         return; // Exit handleInput early
                     }
 
-                } else { // Not enough stamina
+                } else { // Not enough stamina for the attempted move
                     addHistoryMessage("Cannot move! Need " + std::to_string(finalMoveCost) + " stamina, have " + std::to_string(currentStamina) + ".");
                     // Reset flag if player couldn't make the double-cost move
+
+                    // --- Check for Softlock Game Over ---
+                    // Can the player potentially resolve this by dropping a package?
+                    bool canDrop = false;
+                    // Check if holding a package AND on an empty '.' spot
+                    if (currentPackageIndex != -1 && hasPackage[currentPackageIndex] && mapGrid[playerY][playerX] == '.') {
+                        canDrop = true;
+                    }
+
+                    // If stamina is positive, but can't afford the move AND cannot drop a package, it's game over.
+                    if (currentStamina > 0 && !canDrop) {
+                         addHistoryMessage("GAME OVER! Stuck with no possible moves.");
+                         current_state = GameState::MAIN_MENU;
+                         return; // Exit handleInput early
+                    }
+                    // --- End Softlock Check ---
+
+                    // Reset speed bump flag if player couldn't make the double-cost move
                     if (finalMoveCost > baseMoveCost) doubleStaminaCostNextMove = true; // Put the flag back
                 }
             } else { // Hit obstacle
