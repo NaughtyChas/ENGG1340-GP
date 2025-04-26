@@ -501,14 +501,22 @@ void Gameplay::handleInput(int ch) {
             if (playerY == exitY && playerX == exitX) {
                 // Check if all packages are delivered
                 if (packagesDelivered >= num_pkg) {
+                    // --- Add Stamina Reward ---
+                    int staminaReward = 50;
+                    int oldStamina = currentStamina;
+                    currentStamina = std::min(maxStamina, currentStamina + staminaReward);
+                    addHistoryMessage("Level Complete! +" + std::to_string(staminaReward) + " stamina bonus. ("
+                                      + std::to_string(oldStamina) + "->" + std::to_string(currentStamina) + ")");
+
+                    // --- Proceed to Next Level ---
                     roundNumber++;
-                    addHistoryMessage("Level Complete! Proceeding to Round " + std::to_string(roundNumber) + "...");
+                    addHistoryMessage("Proceeding to Round " + std::to_string(roundNumber) + "...");
                     initializeMap(); // Regenerate map, reset player pos, reset delivered count
-                    // Considering adding a screen pause here for user to read the message
 
                     // Reset package holding status
                     std::fill(hasPackage.begin(), hasPackage.end(), false);
                     currentPackageIndex = -1;
+                    doubleStaminaCostNextMove = false; // Reset speed bump flag for new level
 
                     // Add score bonus, reset timer bonus, etc. here later
 
@@ -519,7 +527,6 @@ void Gameplay::handleInput(int ch) {
                 }
             } else {
                 // Optional: Message if Enter pressed not at exit
-                // addHistoryMessage("Press Enter only at the exit 'Q'.");
             }
             break;
 
@@ -639,23 +646,31 @@ void Gameplay::handleInput(int ch) {
             if (mapGrid[nextY][nextX] != '#') {
 
                 // --- Calculate Stamina Cost ---
-                int moveCost = 1;
+                int numHeldPackages = 0;
+                for (bool held : hasPackage) {
+                    if (held) {
+                        numHeldPackages++;
+                    }
+                }
+                int baseMoveCost = 1 + numHeldPackages; // Base cost = 1 + number of packages held
+                int finalMoveCost = baseMoveCost;
+
                 if (doubleStaminaCostNextMove) {
-                    moveCost *= 2;
+                    finalMoveCost *= 2;
                     doubleStaminaCostNextMove = false; // Consume the flag *before* checking stamina
                 }
 
                 // Check Stamina (using calculated cost)
-                if (currentStamina >= moveCost) {
+                if (currentStamina >= finalMoveCost) {
                     int oldStamina = currentStamina;
-                    currentStamina -= moveCost;
-                    currentStamina = std::max(0, currentStamina);
+                    currentStamina -= finalMoveCost;
+                    currentStamina = std::max(0, currentStamina); // Ensure stamina doesn't go below 0
 
                     // Update Player Position
                     playerY = nextY;
                     playerX = nextX;
 
-                    addHistoryMessage("Moved. Cost: " + std::to_string(moveCost) + ". Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
+                    addHistoryMessage("Moved. Cost: " + std::to_string(finalMoveCost) + ". Stamina: " + std::to_string(oldStamina) + " -> " + std::to_string(currentStamina));
 
                     // --- Check for landing on Supply Station ---
                     if (isSupplyActive && playerY == supplyStationY &&
@@ -676,7 +691,6 @@ void Gameplay::handleInput(int ch) {
                     }
 
                     // --- Check for landing on Speed Bump ---
-                    // Check the character at the *new* player position
                     if (mapGrid[playerY][playerX] == '~') {
                          if (!doubleStaminaCostNextMove) {
                              addHistoryMessage("Stepped on a speed bump! Next move costs double.");
@@ -684,9 +698,18 @@ void Gameplay::handleInput(int ch) {
                          }
                     }
 
-                } else {
-                    addHistoryMessage("Cannot move! Need " + std::to_string(moveCost) + " stamina, have " + std::to_string(currentStamina) + ".");
-                    if (moveCost > 1) doubleStaminaCostNextMove = true;
+                    // --- Check for Game Over (Stamina Depleted) ---
+                    if (currentStamina <= 0) {
+                        addHistoryMessage("GAME OVER! You ran out of stamina.");
+                        // For now, just return to main menu. Consider a dedicated GAME_OVER state later.
+                        current_state = GameState::MAIN_MENU;
+                        return; // Exit handleInput early
+                    }
+
+                } else { // Not enough stamina
+                    addHistoryMessage("Cannot move! Need " + std::to_string(finalMoveCost) + " stamina, have " + std::to_string(currentStamina) + ".");
+                    // Reset flag if player couldn't make the double-cost move
+                    if (finalMoveCost > baseMoveCost) doubleStaminaCostNextMove = true; // Put the flag back
                 }
             } else { // Hit obstacle
                 addHistoryMessage("Cannot move! Blocked by obstacle.");
