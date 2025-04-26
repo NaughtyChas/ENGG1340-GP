@@ -6,6 +6,7 @@
 #include <vector>
 #include <chrono>
 #include <utility>
+#include <cmath>
 #include "game.h"
 
 class Gameplay {
@@ -69,6 +70,10 @@ private:
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);
+
+    // Helper functions
+    bool invalidPackageDistance(const int& y, const int& x, const int& i);
+    bool invalidDestinationDistance(const int& y, const int& x, const int& destinationsPlaced);
 };
 
 #endif

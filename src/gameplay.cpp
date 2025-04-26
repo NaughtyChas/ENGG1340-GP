@@ -73,20 +73,17 @@ void Gameplay::initializeMap() {
     auto isValidObstacle = [&](int r, int c) {
         if (!(r > 1 && r < map_size - 2 && c > 1 && c < map_size - 2))
             return false;
-
         // Check surrounding 3 by 3 grid for existing obstacles
         for (int dr = -1; dr < 2; dr++) {
             for (int dc = -1; dc < 2; dc++) {
                 int nr = r + dr;
                 int nc = c + dc;
-
                 if (nr >= 0 && nr < map_size && nc >= 0 && nc < map_size) {
                     if (mapGrid[nr][nc] == '#')
                         return false;
                 }
             }
         }
-
         return true;
     };
 
@@ -96,14 +93,14 @@ void Gameplay::initializeMap() {
         int y = (rand() % (map_size - 2)) + 1;
         int x = (rand() % (map_size - 2)) + 1;
         if (mapGrid[y][x] == '.' && !(y == playerY && x == playerX)) {
-            bool already_chosen = false;
+            bool validPackageLocation = true;
             for (int i = 0; i < packagesPlaced; ++i) {
-                if (packagePickUpLocs[i].first == y && packagePickUpLocs[i].second == x) {
-                    already_chosen = true;
+                if ((packagePickUpLocs[i].first == y && packagePickUpLocs[i].second == x) || invalidPackageDistance(y, x, i)) {
+                    validPackageLocation = false;
                     break;
                 }
             }
-            if (!already_chosen) {
+            if (validPackageLocation) {
                 packagePickUpLocs[packagesPlaced] = {y, x};
                 mapGrid[y][x] = 'O';
                 packagesPlaced++;
@@ -118,13 +115,17 @@ void Gameplay::initializeMap() {
         int x = (rand() % (map_size - 2)) + 1;
         if (mapGrid[y][x] == '.') {
             bool already_chosen = false;
+            bool tooCloseToDestination = false;
+            if (invalidDestinationDistance(y, x, destinationsPlaced)) {
+                tooCloseToDestination = true;
+            }
             for (int i = 0; i < destinationsPlaced; ++i) {
                 if (packageDestLocs[i].first == y && packageDestLocs[i].second == x) {
                     already_chosen = true;
                     break;
                 }
             }
-            if (!already_chosen) {
+            if (!(already_chosen || tooCloseToDestination)) {
                 packageDestLocs[destinationsPlaced] = {y, x};
                 mapGrid[y][x] = 'X';
                 destinationsPlaced++;
@@ -1055,4 +1056,59 @@ void Gameplay::displayPackages() {
 // This function can be called from anywhere in the Gameplay class
 void Gameplay::addHistoryMessage(const std::string& message) {
     historyMessages.push_back(message);
+}
+
+// Check if distance between packages generated are too close
+bool Gameplay::invalidPackageDistance(const int& y, const int& x, const int& i) {
+    int minDistance;
+    switch (difficultyHighlight) {
+        case 0: // Easy
+            minDistance = 6; // Map will fail to generate if set too high
+            break;
+        case 1: // Medium
+            minDistance = 7;
+            break;
+        case 2: // Hard
+            minDistance = 8;
+            break;
+        default:
+            minDistance = 6;
+            break;
+    }
+
+    int y1 = y;
+    int x1 = x;
+    int y2 = packagePickUpLocs[i].first;
+    int x2 = packagePickUpLocs[i].second;
+    int currentDistance = std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
+
+    return currentDistance < minDistance;
+}
+
+// Check if distance between individual packages and destinations is too close
+bool Gameplay::invalidDestinationDistance(const int& y, const int& x, const int& destinationsPlaced) {
+    int minDistance;
+    switch (difficultyHighlight) {
+        case 0: // Easy
+            minDistance = 8;
+            break;
+        case 1: // Medium
+            minDistance = 9;
+            break;
+        case 2: // Hard
+            minDistance = 10;
+            break;
+        default:
+            minDistance = 8;
+            break;
+    }
+
+    int y1 = y;
+    int x1 = x;
+    int y2 = packagePickUpLocs[destinationsPlaced].first;
+    int x2 = packagePickUpLocs[destinationsPlaced].second;
+
+    int currentDistance = std::sqrt(std::pow(x2 - x1, 2) + std::pow(y2 - y1, 2));
+
+    return currentDistance < minDistance;
 }
