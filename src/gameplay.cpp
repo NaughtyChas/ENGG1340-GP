@@ -300,6 +300,8 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       staminaAtRoundStart(200),
       stepsTakenThisRound(0),
       totalScore(0),
+      lastRoundStepScore(0),
+      lastRoundTimeScore(0),
       currentPackageIndex(-1),
       packagesDelivered(0),
       playerY(0), playerX(0),
@@ -523,6 +525,10 @@ void Gameplay::handleInput(int ch) {
                     int stepScore = std::max(0, BASE_STEP_SCORE - (stepsTakenThisRound * STEP_PENALTY));
                     int timeScore = std::max(0, BASE_TIME_SCORE - (static_cast<int>(timeTaken) * TIME_PENALTY));
                     int roundScore = stepScore + timeScore;
+
+                    lastRoundStepScore = stepScore;
+                    lastRoundTimeScore = timeScore;
+
                     totalScore += roundScore;
 
                     // --- Prepare Popup Message ---
@@ -944,16 +950,43 @@ void Gameplay::displayStats() {
     box(statsWin, 0, 0);
     mvwprintw(statsWin, 0, 2, " Stats ");
 
-    // --- Display Total Score ---
     int row = 1;
     int col = 2;
+
+    // --- Display Total Score ---
     mvwprintw(statsWin, row++, col, "Total Score:");
     mvwprintw(statsWin, row++, col, " %lld", totalScore);
 
-    // Add other stats later, for instance:
-    // row++;
-    // mvwprintw(statsWin, row++, col, "Packages Delivered:");
-    // mvwprintw(statsWin, row++, col, " %d / %d", packagesDelivered, num_pkg);
+    // --- Add space ---
+    row++;
+
+    // --- Display Last Round Score ---
+    if (roundNumber > 1) { // Only show if at least one round is complete
+        mvwprintw(statsWin, row++, col, "Last Round Score:");
+        int lastRoundScore = lastRoundStepScore + lastRoundTimeScore;
+        mvwprintw(statsWin, row++, col, " %d", lastRoundScore);
+        // Show breakdown
+        mvwprintw(statsWin, row++, col, " (Steps:%d + Time:%d)", lastRoundStepScore, lastRoundTimeScore);
+    } else {
+        mvwprintw(statsWin, row++, col, "Last Round Score:");
+        mvwprintw(statsWin, row++, col, " N/A");
+        row++; // Keep spacing consistent
+    }
+
+
+    // --- Add space ---
+    row++;
+
+    // --- Display Packages Delivered (Current Round) ---
+    mvwprintw(statsWin, row++, col, "Packages Delivered:");
+    mvwprintw(statsWin, row++, col, " %d / %d", packagesDelivered, num_pkg);
+
+    // --- Add space ---
+    row++;
+
+    // --- Display Steps Taken (Current Round) ---
+    mvwprintw(statsWin, row++, col, "Steps This Round:");
+    mvwprintw(statsWin, row++, col, " %d", stepsTakenThisRound);
 
     wnoutrefresh(statsWin);
 }
