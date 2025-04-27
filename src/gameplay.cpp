@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-#include <vector>  // Not used for now, but might be needed later
+#include <vector>
 #include <utility>
 #include <algorithm>
 #include <set>
@@ -24,10 +24,6 @@ void Gameplay::initializeMap() {
     for (int x = 0; x < map_size; ++x) {
         mapGrid[0][x] = '-';
         mapGrid[map_size - 1][x] = '-';
-        // I have gave up using window drawing here, since it is not working well
-        // The playarea is having a hardtime aligning with the window borders
-        // Character "-" has space in between when displaying multiple of it in a row,
-        // suggest fiding a better character to use for borders
     }
     // Left and Right borders
     for (int y = 1; y < map_size - 1; ++y) {
@@ -303,6 +299,7 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       maxStamina(200),
       staminaAtRoundStart(200),
       stepsTakenThisRound(0),
+      totalScore(0),
       currentPackageIndex(-1),
       packagesDelivered(0),
       playerY(0), playerX(0),
@@ -506,7 +503,7 @@ void Gameplay::handleInput(int ch) {
             if (playerY == exitY && playerX == exitX) {
                 // Check if all packages are delivered
                 if (packagesDelivered >= num_pkg) {
-                    // --- Calculate Stats ---
+                    // --- Calculate Stats & Score ---
                     int staminaReward = 50;
                     int oldStamina = currentStamina;
                     int finalStamina = std::min(maxStamina, currentStamina + staminaReward);
@@ -516,15 +513,28 @@ void Gameplay::handleInput(int ch) {
                     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
                     long long timeTaken = elapsed.count();
 
+                    // --- Scoring ---
+                    // Define base scores and penalties
+                    const int BASE_STEP_SCORE = 1000;
+                    const int STEP_PENALTY = 5;
+                    const int BASE_TIME_SCORE = 1000;
+                    const int TIME_PENALTY = 2;
+
+                    int stepScore = std::max(0, BASE_STEP_SCORE - (stepsTakenThisRound * STEP_PENALTY));
+                    int timeScore = std::max(0, BASE_TIME_SCORE - (static_cast<int>(timeTaken) * TIME_PENALTY));
+                    int roundScore = stepScore + timeScore;
+                    totalScore += roundScore;
+
                     // --- Prepare Popup Message ---
                     std::vector<std::string> popupLines;
                     popupLines.push_back("Round " + std::to_string(roundNumber) + " Complete!");
                     popupLines.push_back("");
-                    popupLines.push_back("Time Taken: " + std::to_string(timeTaken) + "s");
-                    popupLines.push_back("Steps Taken: " + std::to_string(stepsTakenThisRound));
+                    popupLines.push_back("Time Taken: " + std::to_string(timeTaken) + "s (Score: " + std::to_string(timeScore) + ")");
+                    popupLines.push_back("Steps Taken: " + std::to_string(stepsTakenThisRound) + " (Score: " + std::to_string(stepScore) + ")");
                     popupLines.push_back("Stamina Used: " + std::to_string(staminaUsedThisRound));
                     popupLines.push_back("Stamina Bonus: +" + std::to_string(staminaReward));
-                    popupLines.push_back("Score: (Not Implemented)");
+                    popupLines.push_back("Round Score: " + std::to_string(roundScore));
+                    popupLines.push_back("Total Score: " + std::to_string(totalScore));
 
                     // --- Display Popup ---
                     displayPopupMessage("Level Complete", popupLines);
@@ -532,8 +542,7 @@ void Gameplay::handleInput(int ch) {
                     // --- Apply Reward and Proceed ---
                     currentStamina = finalStamina;
                     staminaAtRoundStart = currentStamina;
-                    addHistoryMessage("Level Complete! +" + std::to_string(staminaReward) + " stamina bonus. ("
-                                      + std::to_string(oldStamina) + "->" + std::to_string(currentStamina) + ")");
+                    addHistoryMessage("Level Complete! +" + std::to_string(staminaReward) + " stamina bonus. Round Score: " + std::to_string(roundScore));
                     roundNumber++;
                     addHistoryMessage("Proceeding to Round " + std::to_string(roundNumber) + "...");
                     initializeMap();
@@ -735,13 +744,13 @@ void Gameplay::handleInput(int ch) {
                         popupLines.push_back("Round Reached: " + std::to_string(roundNumber));
                         popupLines.push_back("Time This Round: " + std::to_string(timeTaken) + "s");
                         popupLines.push_back("Steps This Round: " + std::to_string(stepsTakenThisRound));
-                        popupLines.push_back("Total Score: (Not Implemented)");
+                        popupLines.push_back("Final Total Score: " + std::to_string(totalScore));
 
                         // --- Display Popup ---
                         displayPopupMessage("Game Over", popupLines);
 
                         // --- Set Game State ---
-                        addHistoryMessage("GAME OVER! You ran out of stamina.");
+                        addHistoryMessage("GAME OVER! You ran out of stamina. Final Score: " + std::to_string(totalScore));
                         current_state = GameState::MAIN_MENU;
                         return; // Exit handleInput early
                     }
@@ -772,13 +781,13 @@ void Gameplay::handleInput(int ch) {
                         popupLines.push_back("Round Reached: " + std::to_string(roundNumber));
                         popupLines.push_back("Time This Round: " + std::to_string(timeTaken) + "s");
                         popupLines.push_back("Steps This Round: " + std::to_string(stepsTakenThisRound));
-                        popupLines.push_back("Total Score: (Not Implemented)");
+                        popupLines.push_back("Final Total Score: " + std::to_string(totalScore));
 
                         // --- Display Popup ---
                         displayPopupMessage("Game Over", popupLines);
 
                         // --- Set Game State ---
-                        addHistoryMessage("GAME OVER! Stuck with no possible moves.");
+                        addHistoryMessage("GAME OVER! Stuck with no possible moves. Final Score: " + std::to_string(totalScore));
                         current_state = GameState::MAIN_MENU;
                         return;
                     }
@@ -934,6 +943,18 @@ void Gameplay::displayStats() {
     werase(statsWin);
     box(statsWin, 0, 0);
     mvwprintw(statsWin, 0, 2, " Stats ");
+
+    // --- Display Total Score ---
+    int row = 1;
+    int col = 2;
+    mvwprintw(statsWin, row++, col, "Total Score:");
+    mvwprintw(statsWin, row++, col, " %lld", totalScore);
+
+    // Add other stats later, for instance:
+    // row++;
+    // mvwprintw(statsWin, row++, col, "Packages Delivered:");
+    // mvwprintw(statsWin, row++, col, " %d / %d", packagesDelivered, num_pkg);
+
     wnoutrefresh(statsWin);
 }
 

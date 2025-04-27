@@ -31,6 +31,7 @@ private:
     int maxStamina;
     int staminaAtRoundStart;
     int stepsTakenThisRound;
+    long long totalScore;
     std::vector<std::string> historyMessages; // To store messages
     std::chrono::steady_clock::time_point startTime;
 
