@@ -1,5 +1,4 @@
 #include "../include/player.h"
-#include "../include/gameplay.h"
 
 #include <ncurses.h>
 
@@ -10,22 +9,24 @@
 #include <string>
 #include <vector>
 
+#include "../include/gameplay.h"
+
 Player::Player(Gameplay* gameplay)
     : gameplay(gameplay),
-        x(gameplay->getMapSize()), // Or different spawn location everytime
-        y(gameplay->getMapSize() / 2),
-        symbol('@') {}
+      x(gameplay->getMapSize()),  // Or different spawn location everytime
+      y(gameplay->getMapSize() / 2),
+      symbol('@') {
+}
 
 Player::~Player() {
-
 }
 
 void Player::draw() {
-        mvwaddch(gameplay->getMapWindow(), y, x, symbol);
+    mvwaddch(gameplay->getMapWindow(), y, x, symbol);
 }
 
 void Player::moveUp() {
-    if (gameplay->getStaminaEmpty()){
+    if (gameplay->getStaminaEmpty()) {
         gameplay->addHistoryMessage("Stamina already empty!");
         return;
     }
@@ -41,7 +42,7 @@ void Player::moveUp() {
 }
 
 void Player::moveDown() {
-    if (gameplay->getStaminaEmpty()){
+    if (gameplay->getStaminaEmpty()) {
         gameplay->addHistoryMessage("Stamina already empty!");
         return;
     }
@@ -57,7 +58,7 @@ void Player::moveDown() {
 }
 
 void Player::moveLeft() {
-    if (gameplay->getStaminaEmpty()){
+    if (gameplay->getStaminaEmpty()) {
         gameplay->addHistoryMessage("Stamina already empty!");
         return;
     }
@@ -73,7 +74,7 @@ void Player::moveLeft() {
 }
 
 void Player::moveRight() {
-    if (gameplay->getStaminaEmpty()){
+    if (gameplay->getStaminaEmpty()) {
         gameplay->addHistoryMessage("Stamina already empty!");
         return;
     }
@@ -89,9 +90,7 @@ void Player::moveRight() {
 }
 
 void Player::PickupPackage() {
-
 }
 
 void Player::dropPackage() {
-
 }
