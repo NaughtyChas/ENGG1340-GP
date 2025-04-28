@@ -1,5 +1,7 @@
 # ENGG1340-GP
-Game built for ENGG1340 group project.
+Title: **《Rebirth : Me Delivering Keeta in Doomsday》**  
+_*Game built for ENGG1340 group project._  
+
 ## GROUP MEMBER ##
 *
 * 
@@ -7,18 +9,25 @@ Game built for ENGG1340 group project.
 * WuZijie 3036296930
 * Zhu Lianbi 3036296899
 *
+
+## GAME DESCRIPTION ##
+**Background Story**  
+  In the blink of an eye, the world as you knew it ended.  
+  One minute, you were just a normal student, bored out of your mind in class, scrolling through your phone and ordering "Keeta Takeout". The next minute—  _BOOM_. Your brain short-circuited, and the world went black...  
+  You woke up to the sound of the earth splitting open, your face pressed against cracked asphalt, the sky a sickly shade of blood-red, with strange walls and obstacles rising everywhere.  
+  "What the—?!"  
+  Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors and rogue machines. The most precious resource? Not just food or weapons— but connection.  
+  Your phone buzzes violently. Pulling it out with trembling hands, a notification flashes:  
+  _// "Packages remaining today: 3" //_  
+  There is a map shown the location of packages and delivery location.  
+  You look down. The uniform clings to your body— neon orange, with the Keeta logo smeared.  
+  In this fractured world, every package you deliver is a thread binding humanity together: medicine for the sick, letters from lost loved ones, hope in a dying world.  
+  They’re lifelines in this apocalyptic wasteland.  
+  Your heart beats, faster and faster.  
+  Move. Move! Time is running out. Every second wasted is another name crossed off the list. Your muscles burn, your lungs scream— but you must keep going.  
+  Your mission? Deliver the packages against all odds— before the world collapses entirely.  
+
 ## DESCRIPTION FOR THE GAME ##
-* Title: 《 ***Rebirth : Me Delivering Keeta in Doomsday*** 》
-* Background Story:
-  -   One minute, you were just a normal student, bored out of your mind in class, scrolling through your phone and ordering "Keeta Takeout". The next minute— _BOOM_. Your brain short-circuited. The world went black......\
-  -   You woke up to the sound of the earth splitting open, your face pressed against cracked asphalt, the sky a sickly shade of blood-red, with strange walls and obstacles rising everywhere.\
-  - "What the—?!"\
-  -   Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors, rogue machines, and the most serious problem-resource supply.\
-  -   Your phone buzzes violently in your pocket. You pull it out with trembling hands, a notification appear:\
-  -   There is a map shown the location of packages and delivery location.\
-  -   "Packages remaining today: 3"\
-  -   That’s when you notice the uniform clinging to your body—neon orange, with the Keeta logo smeared. Every parcel is a fragile heartbeat in the chest of the apocalypse for life.\
-  - Move. Move! Time waits for noone. Every second wasted is another name crossed off the list. Your lungs scream, your muscles burn—keep running.
 * Brief Introduction:
   - This is a text-based single-player puzzle graphics game. Your goal is to transport more goods to the location with limited stamina.
   - Players need to need to choose the right path to avoid obstacles. As well as choose the right time to take and put the goods.
