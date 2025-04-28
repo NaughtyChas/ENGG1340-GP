@@ -714,7 +714,7 @@ void Gameplay::handleInput(int ch) {
                     if (isSupplyActive && playerY == supplyStationY &&
                         (playerX >= supplyStationX && playerX <= supplyStationX + 2))
                     {
-                        int staminaGain = (rand() % 31) + 20; // Ranging to 20-50
+                        int staminaGain = (rand() % 31) + 40; // Ranging from 40-70
                         int oldStaminaBeforeGain = currentStamina;
                         currentStamina = std::min(maxStamina, currentStamina + staminaGain);
                         addHistoryMessage("Supply opened! +" + std::to_string(staminaGain) + " stamina. ("
