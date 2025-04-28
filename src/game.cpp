@@ -294,23 +294,23 @@ void Game::displayDifficultyMenu() {
     switch (difficultyHighlight) {
         // EZ
         case 0:
-            map_size = "9x9";
+            map_size = "15x15";
             packages = "3";
-            obstacles = "5";
+            obstacles = "4";
             desc = "A gentler start.";
             break;
         // Medium
         case 1:
-            map_size = "11x11";
+            map_size = "20x20";
             packages = "4";
-            obstacles = "6";
+            obstacles = "5";
             desc = "A standard challenge.";
             break;
         // Hard
         case 2:
-            map_size = "13x13";
+            map_size = "25x25";
             packages = "5";
-            obstacles = "7";
+            obstacles = "6";
             desc = "For the seasoned courier.";
             break;
     }
