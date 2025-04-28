@@ -2,7 +2,7 @@
 Game built for ENGG1340 group project.
 ## GROUP MEMBER ##
 *
-*
+* Zhu Lianbi 3036296899
 * ZhangQi 3036292697
 * WuZijie 3036296930
 *
