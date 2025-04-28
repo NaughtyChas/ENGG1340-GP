@@ -1025,47 +1025,53 @@ void Gameplay::displayLegend() {
     werase(legendWin);
     box(legendWin, 0, 0);
 
+    // Get window height to prevent writing over borders
+    int winHeight = getmaxy(legendWin);
+
     // Display Round Number
     std::string roundText = "Round " + std::to_string(roundNumber);
     wattron(legendWin, A_BOLD);
-    mvwprintw(legendWin, 0, 2, " %s ", roundText.c_str());
+    // Ensure title doesn't overwrite corners if window is very narrow
+    int titleX = std::max(1, (getmaxx(legendWin) - static_cast<int>(roundText.length()) - 2) / 2);
+    mvwprintw(legendWin, 0, titleX, " %s ", roundText.c_str());
     wattroff(legendWin, A_BOLD);
 
     // --- Starting row for content ---
-    int row = 2;
+    int row = 2; // Start below top border and title line
     int col = 2;
+    int lastAvailableRow = winHeight - 2; // Last usable row before bottom border
 
     // --- Legend Content ---
-    mvwprintw(legendWin, row++, col, "--- Legend ---");
-    mvwprintw(legendWin, row++, col, " @: Player");
-    mvwprintw(legendWin, row++, col, " #: Obstacle");
-    mvwprintw(legendWin, row++, col, " ~: Speed Bump");
-    mvwprintw(legendWin, row++, col, " [$]: Supply Station");
-    mvwprintw(legendWin, row++, col, " O: Package");
-    mvwprintw(legendWin, row++, col, " X: Destination");
-    mvwprintw(legendWin, row++, col, " Q: Exit");
-    row++;
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "--- Legend ---");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " @: Player");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " #: Obstacle");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " ~: Speed Bump");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " [$]: Supply Station");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " O: Package");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " X: Destination");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " Q: Exit");
+    if (row <= lastAvailableRow) row++; // Blank line
 
     // --- Movement Controls ---
-    mvwprintw(legendWin, row++, col, "--- Movement ---");
-    mvwprintw(legendWin, row++, col, "   W: Move Up");
-    mvwprintw(legendWin, row++, col, "   S: Move Down");
-    mvwprintw(legendWin, row++, col, "   A: Move Left");
-    mvwprintw(legendWin, row++, col, "   D: Move Right");
-    row++;
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "--- Movement ---");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   W: Move Up");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   S: Move Down");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   A: Move Left");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   D: Move Right");
+    if (row <= lastAvailableRow) row++; // Blank line
 
     // --- Package Controls ---
-    mvwprintw(legendWin, row++, col, "--- Package ---");
-    mvwprintw(legendWin, row++, col, "   Q: Pick Up");
-    mvwprintw(legendWin, row++, col, "   E: Drop current package");
-    mvwprintw(legendWin, row++, col, " 1-5: Switch current package");  // Simplified
-    row++;
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "--- Package ---");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   Q: Pick Up");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "   E: Drop current");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " 1-5: Select package");
+    if (row <= lastAvailableRow) row++; // Blank line
 
     // --- Game Controls ---
-    mvwprintw(legendWin, row++, col, "---- Game ----");
-    mvwprintw(legendWin, row++, col, " Enter: Next Level (at Q,all pkgs delivered)");
-    mvwprintw(legendWin, row++, col, "   ESC: Pause");
-    mvwprintw(legendWin, row++, col, " Hold ESC: Quit");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, "---- Game ----");
+    // Combine Enter description
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " Enter: Next Level (at Q)");
+    if (row <= lastAvailableRow) mvwprintw(legendWin, row++, col, " ESC: Exit to Menu");
 
     wnoutrefresh(legendWin);
 }
