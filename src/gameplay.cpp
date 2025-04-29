@@ -35,8 +35,6 @@ void Gameplay::initializeMap() {
     mapGrid[0][map_size - 1] = '+';
     mapGrid[map_size - 1][0] = '+';
     mapGrid[map_size - 1][map_size - 1] = '+';
-    // Or you can use special characters for each of the four corners,
-    // if Linux terminal can support it
 
     // Seed
     srand(time(0));
@@ -47,6 +45,8 @@ void Gameplay::initializeMap() {
     packageDestLocs.clear();
     packagePickUpLocs.resize(num_pkg);
     packageDestLocs.resize(num_pkg);
+    supplyStationLocations.clear();
+    speedBumpLocations.clear();
 
     // Define Player Start and Exit Locations
     playerY = map_size / 2;
@@ -66,12 +66,19 @@ void Gameplay::initializeMap() {
             return true;
         if (r == playerY && c == playerX)
             return true;
+        if (r == exitY && c == exitX)
+            return true;
+        for (const auto& loc : packagePickUpLocs)
+            if (r == loc.first && c == loc.second)
+                return true;
+        for (const auto& loc : packageDestLocs)
+            if (r == loc.first && c == loc.second)
+                return true;
         return false;
     };
     auto isValidObstacle = [&](int r, int c) {
         if (!(r > 1 && r < map_size - 2 && c > 1 && c < map_size - 2))
             return false;
-        // Check surrounding 3 by 3 grid for existing obstacles
         for (int dr = -1; dr < 2; dr++) {
             for (int dc = -1; dc < 2; dc++) {
                 int nr = r + dr;
@@ -158,20 +165,16 @@ void Gameplay::initializeMap() {
         int len = minObstacleLength +
                   (rand() % (maxObstacleLength - minObstacleLength + 1));  // Random length
 
-        // Random starting point within inner bounds
         int startY = (rand() % (map_size - len - 2)) + 1;
         int startX = (rand() % (map_size - len - 2)) + 1;
 
         bool canPlace = true;
-        std::vector<std::pair<int, int>>
-            currentObstacleCoords;  // Coords for this potential obstacle
+        std::vector<std::pair<int, int>> currentObstacleCoords;
 
-        // Check if the entire obstacle fits and is on empty ground
         for (int i = 0; i < len; ++i) {
             int currentY = startY + (horizontal ? 0 : i);
             int currentX = startX + (horizontal ? i : 0);
 
-            // Check bounds and if the spot is empty '.'
             if (!isValidObstacle(currentY, currentX) || mapGrid[currentY][currentX] != '.') {
                 canPlace = false;
                 break;  // Stop checking this potential obstacle
@@ -179,7 +182,6 @@ void Gameplay::initializeMap() {
             currentObstacleCoords.push_back({currentY, currentX});
         }
 
-        // If the spot is valid, place the obstacle
         if (canPlace) {
             for (const auto& coord : currentObstacleCoords) {
                 mapGrid[coord.first][coord.second] = '#';
@@ -190,27 +192,35 @@ void Gameplay::initializeMap() {
     }
 
     // --- Place Supply Station [$] ---
-    isSupplyActive = false;
-    int supplyAttempts = 0;
-    int maxSupplyAttempts = map_size * map_size;
+    int numStationsToPlace = 1;  // Default Easy
+    if (difficultyHighlight == 1) {  // Medium
+        numStationsToPlace = 2;
+    } else if (difficultyHighlight == 2) {  // Hard
+        numStationsToPlace = 3;
+    }
 
-    while (!isSupplyActive && supplyAttempts < maxSupplyAttempts) {
+    int stationsPlaced = 0;
+    int supplyAttempts = 0;
+    int maxSupplyAttempts = map_size * map_size * 2;
+
+    while (stationsPlaced < numStationsToPlace && supplyAttempts < maxSupplyAttempts) {
+        supplyAttempts++;
         int y = (rand() % (map_size - 2)) + 1;
         int x = (rand() % (map_size - 4)) + 1;
 
-        if (mapGrid[y][x] == '.' && mapGrid[y][x + 1] == '.' && mapGrid[y][x + 2] == '.') {
+        if (mapGrid[y][x] == '.' && !isOccupiedOrProtected(y, x) &&
+            mapGrid[y][x + 1] == '.' && !isOccupiedOrProtected(y, x + 1) &&
+            mapGrid[y][x + 2] == '.' && !isOccupiedOrProtected(y, x + 2)) {
             mapGrid[y][x] = '[';
             mapGrid[y][x + 1] = '$';
             mapGrid[y][x + 2] = ']';
-            supplyStationY = y;
-            supplyStationX = x;
-            isSupplyActive = true;
+
+            supplyStationLocations.push_back({y, x});
+            stationsPlaced++;
         }
-        supplyAttempts++;
     }
 
     // --- Place Speed Bumps [~] ---
-    // Define speed bump parameters based on difficulty
     int numPatches;
     int minY, maxY;
     int minX, maxX;
@@ -250,16 +260,14 @@ void Gameplay::initializeMap() {
     }
 
     int patchesPlaced = 0;
-    int maxAttempts = map_size * map_size * 2;  // Limit attempts
+    int maxAttempts = map_size * map_size * 2;
     int attempts = 0;
 
     while (patchesPlaced < numPatches && attempts < maxAttempts) {
         attempts++;
 
-        // Generate row number
         int patchRows = minY + (rand() % (maxY - minY + 1));
 
-        // Generate patch starting position
         int patchStartY = (rand() % (map_size - patchRows - 2)) + 1;
         int patchStartX = (rand() % (map_size - maxX - 2)) + 1;
 
@@ -269,16 +277,15 @@ void Gameplay::initializeMap() {
             // Randomize starting x with slight offset
             int rowStartX = patchStartX + rand() % 3;  // 0, 1 or 2 offset
 
-            // Generate row length
             int rowLength = minX + (rand() % (maxX - minX + 1));
 
             for (int col = 0; col < rowLength; col++) {
                 int y = patchStartY + row;
                 int x = rowStartX + col;
 
-                // Draw in mapGrid is position is valid
                 if (!isOccupiedOrProtected(y, x)) {
                     mapGrid[y][x] = '~';
+                    speedBumpLocations.push_back({y, x});
                     placedPatch = true;
                 }
             }
@@ -313,9 +320,6 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
       playerX(0),
       exitY(0),
       exitX(0),
-      isSupplyActive(false),
-      supplyStationY(-1),
-      supplyStationX(-1),
       doubleStaminaCostNextMove(false) {
     switch (difficultyHighlight) {
         case 0:
@@ -748,21 +752,29 @@ void Gameplay::handleInput(int ch) {
                                       std::to_string(currentStamina));
 
                     // --- Check for landing on Supply Station ---
-                    if (isSupplyActive && playerY == supplyStationY &&
-                        (playerX >= supplyStationX && playerX <= supplyStationX + 2)) {
-                        int staminaGain = (rand() % 31) + 40;  // Ranging from 40-70
-                        int oldStaminaBeforeGain = currentStamina;
-                        currentStamina = std::min(maxStamina, currentStamina + staminaGain);
-                        addHistoryMessage("Supply opened! +" + std::to_string(staminaGain) +
-                                          " stamina. (" + std::to_string(oldStaminaBeforeGain) +
-                                          "->" + std::to_string(currentStamina) + ")");
+                    for (int i = supplyStationLocations.size() - 1; i >= 0; --i) {
+                        int stationY = supplyStationLocations[i].first;
+                        int stationX = supplyStationLocations[i].second;
 
-                        // Remove da shiny supply station from the map
-                        mapGrid[supplyStationY][supplyStationX] = '.';
-                        mapGrid[supplyStationY][supplyStationX + 1] = '.';
-                        mapGrid[supplyStationY][supplyStationX + 2] = '.';
+                        // Check if player landed on any part of this station
+                        if (playerY == stationY && (playerX >= stationX && playerX <= stationX + 2)) {
+                            int staminaGain = (rand() % 31) + 40;  // Ranging from 40-70
+                            int oldStaminaBeforeGain = currentStamina;
+                            currentStamina = std::min(maxStamina, currentStamina + staminaGain);
+                            addHistoryMessage("Supply opened! +" + std::to_string(staminaGain) +
+                                              " stamina. (" + std::to_string(oldStaminaBeforeGain) +
+                                              "->" + std::to_string(currentStamina) + ")");
 
-                        isSupplyActive = false;
+                            // Remove the supply station from the map grid
+                            mapGrid[stationY][stationX] = '.';
+                            mapGrid[stationY][stationX + 1] = '.';
+                            mapGrid[stationY][stationX + 2] = '.';
+
+                            // Remove the station from the active list
+                            supplyStationLocations.erase(supplyStationLocations.begin() + i);
+
+                            break;  // Player can only use one station per step
+                        }
                     }
 
                     // --- Check for landing on Speed Bump ---
@@ -940,6 +952,7 @@ void Gameplay::displayMap() {
                 if (displayChar == '.') {
                     colorPair = 3;
                 } else if (displayChar == 'O') {
+                    // Find which package this is
                     for (int i = 0; i < num_pkg; ++i) {
                         if (packagePickUpLocs[i].first == y && packagePickUpLocs[i].second == x) {
                             colorPair = 4 + i;  // Assign color pair
@@ -955,19 +968,33 @@ void Gameplay::displayMap() {
                         }
                     }
                 } else if (displayChar == '[' || displayChar == '$' || displayChar == ']') {
-                    // Check if it's part of the active supply station
-                    if (isSupplyActive && y == supplyStationY && x >= supplyStationX &&
-                        x <= supplyStationX + 2) {
-                        colorPair = 9;  // Apply supply station color
+                    // Check if it's part of any *active* supply station in the vector
+                    bool isPartOfActiveStation = false;
+                    for (const auto& stationLoc : supplyStationLocations) {
+                        if (y == stationLoc.first && x >= stationLoc.second && x <= stationLoc.second + 2) {
+                            isPartOfActiveStation = true;
+                            break;
+                        }
                     }
+                    if (isPartOfActiveStation) {
+                        colorPair = 9; // Apply supply station color (Pair 9)
+                    }
+                    // If it's '[', '$', ']' but not in the active list, it gets default color (0)
                 } else if (displayChar == '~') {
-                    colorPair = 10;
+                    colorPair = 10; // Speed bump color (Pair 10)
+                } else if (displayChar == 'Q') {
+                    // Optional: Add color for Exit 'Q' if desired (e.g., pair 9 or a new one)
+                    // colorPair = 9;
+                } else if (displayChar == '#' || displayChar == '-' || displayChar == '|' || displayChar == '+') {
+                    // Optional: Add color for obstacles/borders if desired
                 }
 
+                // Apply color if specified
                 if (colorPair > 0) {
                     wattron(mapWin, COLOR_PAIR(colorPair));
                 }
 
+                // Use mvwaddch for single characters
                 mvwaddch(mapWin, winY, winX, displayChar);
 
                 // Turn off color

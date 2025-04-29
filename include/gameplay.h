@@ -14,7 +14,6 @@ public:
     Gameplay(const int &difficultyHighlight, GameState &current_state);
     ~Gameplay();
     void run();
-    // Not yet implemented
     void addHistoryMessage(const std::string& message);
 
 private:
@@ -48,9 +47,8 @@ private:
     int exitY, exitX;
     std::vector<std::pair<int, int>> packagePickUpLocs;
     std::vector<std::pair<int, int>> packageDestLocs;
-    bool isSupplyActive;
-    int supplyStationY, supplyStationX;
-    std::vector<std::pair<int, int>> speedBumpLocations;
+    std::vector<std::pair<int, int>> supplyStationLocations; // <<< Add this line
+    std::vector<std::pair<int, int>> speedBumpLocations; // <<< This should already exist
     bool doubleStaminaCostNextMove;
 
     // Windows
@@ -70,8 +68,6 @@ private:
     void displayTime();
     void displayLegend();
     void displayStaminaBar();
-    // Add methods for handling input, updating game state...
-    // TBD
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);
