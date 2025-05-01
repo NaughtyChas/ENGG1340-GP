@@ -17,7 +17,7 @@
 #endif
 
 // Constants
-const int MIN_HEIGHT = 30;
+const int MIN_HEIGHT = 31;
 const int MIN_WIDTH = 115;
 
 // Constructor initializes ncurses and create main window
@@ -254,7 +254,7 @@ void Game::displayMenu() {
     mvwprintw(mainWindow, rightY++, descX, " ");
     mvwprintw(mainWindow, rightY++, descX, "Select 'New Game' to begin");
     mvwprintw(mainWindow, rightY++, descX, "your perilous journey.");
-    mvwprintw(mainWindow, rightY++, descX, "Select 'Stats' to check your");
+    mvwprintw(mainWindow, rightY++, descX, "Select 'Load Game' to continue your");
     mvwprintw(mainWindow, rightY++, descX, "previous progress.");
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
     wattroff(mainWindow, COLOR_PAIR(2));
@@ -601,8 +601,6 @@ void Game::handleDifficultyInput(int choice) {
             // Pass the selected difficulty index (0=Easy, 1=Medium, 2=Hard)
             isNewGame = true; // Reset game
             newGame(difficultyHighlight, isNewGame);
-            // newGame currently sets state back to MAIN_MENU.
-            // Later, it will set state to IN_GAME.
             break;
         case 27:                                   // ESC
         case KEY_BACKSPACE:                        // Often mapped similarly or preferred by users

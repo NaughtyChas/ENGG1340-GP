@@ -203,7 +203,6 @@ void Gameplay::initializeMap() {
     int maxClusterAttempts = map_size * map_size;
     int clusterAttempts = 0;
 
-    // Modified approach for cluster generation
     while (clustersPlaced < numClusters && clusterAttempts < maxClusterAttempts) {
         clusterAttempts++;
         
@@ -211,9 +210,7 @@ void Gameplay::initializeMap() {
         int startY = (rand() % (map_size - clusterSize - 2)) + 1;
         int startX = (rand() % (map_size - clusterSize - 2)) + 1;
         
-        // First, check if the entire area is valid for a cluster
-        // We only need one position in the entire cluster area to pass isValidObstacle
-        // This ensures clusters have space between them, but can be packed internally
+        // Check if the entire area is valid for a cluster
         bool validClusterArea = false;
         for (int dy = 0; dy < clusterSize && !validClusterArea; dy++) {
             for (int dx = 0; dx < clusterSize && !validClusterArea; dx++) {
@@ -228,7 +225,7 @@ void Gameplay::initializeMap() {
         
         if (!validClusterArea) continue;
         
-        // Now check if the area is free of other obstacles using isOccupiedOrProtected
+        // Check if the area is free of other obstacles
         bool canPlaceCluster = true;
         for (int dy = 0; dy < clusterSize && canPlaceCluster; dy++) {
             for (int dx = 0; dx < clusterSize && canPlaceCluster; dx++) {
@@ -241,16 +238,14 @@ void Gameplay::initializeMap() {
         }
         
         if (canPlaceCluster) {
-            // Place obstacles in this cluster - skip individual isValidObstacle checks
+            // Skip individual isValidObstacle checks
             bool placedAnyBlocks = false;
             
-            // Generate the pattern for this cluster
+            // Generate pattern
             for (int dy = 0; dy < clusterSize; dy++) {
-                // Decide how many blocks to place in this row
                 int blocksInRow = 1 + (rand() % maxBlocksPerRow);
                 blocksInRow = std::min(blocksInRow, clusterSize);
                 
-                // Generate positions for the blocks
                 std::vector<int> positions;
                 for (int i = 0; i < clusterSize; i++) {
                     positions.push_back(i);
@@ -1172,14 +1167,9 @@ void Gameplay::displayTime() {
     std::string timeStr = timeStream.str();
 
     // --- Display Information ---
-    int row = 1;
+    int row = 2;
     int col = 2;
     mvwprintw(timeWin, row++, col, "Elapsed: %s", timeStr.c_str());
-    row++;  // Add a blank line
-    mvwprintw(timeWin, row++, col, "Time Bonus:");
-    mvwprintw(timeWin, row++, col,
-              "  (Not Implemented)");  // Placeholder, will be implemented later
-
     wnoutrefresh(timeWin);
 }
 
