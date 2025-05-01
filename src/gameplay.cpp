@@ -192,7 +192,7 @@ void Gameplay::initializeMap() {
     }
 
     // --- Place Supply Station [$] ---
-    int numStationsToPlace = 1;  // Default Easy
+    int numStationsToPlace = 1;      // Default Easy
     if (difficultyHighlight == 1) {  // Medium
         numStationsToPlace = 2;
     } else if (difficultyHighlight == 2) {  // Hard
@@ -208,9 +208,9 @@ void Gameplay::initializeMap() {
         int y = (rand() % (map_size - 2)) + 1;
         int x = (rand() % (map_size - 4)) + 1;
 
-        if (mapGrid[y][x] == '.' && !isOccupiedOrProtected(y, x) &&
-            mapGrid[y][x + 1] == '.' && !isOccupiedOrProtected(y, x + 1) &&
-            mapGrid[y][x + 2] == '.' && !isOccupiedOrProtected(y, x + 2)) {
+        if (mapGrid[y][x] == '.' && !isOccupiedOrProtected(y, x) && mapGrid[y][x + 1] == '.' &&
+            !isOccupiedOrProtected(y, x + 1) && mapGrid[y][x + 2] == '.' &&
+            !isOccupiedOrProtected(y, x + 2)) {
             mapGrid[y][x] = '[';
             mapGrid[y][x + 1] = '$';
             mapGrid[y][x + 2] = ']';
@@ -757,7 +757,8 @@ void Gameplay::handleInput(int ch) {
                         int stationX = supplyStationLocations[i].second;
 
                         // Check if player landed on any part of this station
-                        if (playerY == stationY && (playerX >= stationX && playerX <= stationX + 2)) {
+                        if (playerY == stationY &&
+                            (playerX >= stationX && playerX <= stationX + 2)) {
                             int staminaGain = (rand() % 31) + 40;  // Ranging from 40-70
                             int oldStaminaBeforeGain = currentStamina;
                             currentStamina = std::min(maxStamina, currentStamina + staminaGain);
@@ -971,21 +972,23 @@ void Gameplay::displayMap() {
                     // Check if it's part of any *active* supply station in the vector
                     bool isPartOfActiveStation = false;
                     for (const auto& stationLoc : supplyStationLocations) {
-                        if (y == stationLoc.first && x >= stationLoc.second && x <= stationLoc.second + 2) {
+                        if (y == stationLoc.first && x >= stationLoc.second &&
+                            x <= stationLoc.second + 2) {
                             isPartOfActiveStation = true;
                             break;
                         }
                     }
                     if (isPartOfActiveStation) {
-                        colorPair = 9; // Apply supply station color (Pair 9)
+                        colorPair = 9;  // Apply supply station color (Pair 9)
                     }
                     // If it's '[', '$', ']' but not in the active list, it gets default color (0)
                 } else if (displayChar == '~') {
-                    colorPair = 10; // Speed bump color (Pair 10)
+                    colorPair = 10;  // Speed bump color (Pair 10)
                 } else if (displayChar == 'Q') {
                     // Optional: Add color for Exit 'Q' if desired (e.g., pair 9 or a new one)
                     // colorPair = 9;
-                } else if (displayChar == '#' || displayChar == '-' || displayChar == '|' || displayChar == '+') {
+                } else if (displayChar == '#' || displayChar == '-' || displayChar == '|' ||
+                           displayChar == '+') {
                     // Optional: Add color for obstacles/borders if desired
                 }
 
