@@ -11,7 +11,7 @@
 
 class Gameplay {
 public:
-    Gameplay(const int &difficultyHighlight, GameState &current_state);
+    Gameplay(const int &difficultyHighlight, GameState &current_state, bool isNewGame);
     ~Gameplay();
     void run();
     void addHistoryMessage(const std::string& message);
@@ -68,6 +68,8 @@ private:
     void displayTime();
     void displayLegend();
     void displayStaminaBar();
+    bool displayQuitOptions();
+
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);
@@ -76,6 +78,10 @@ private:
     // Helper functions
     bool invalidPackageDistance(const int& y, const int& x, const int& i);
     bool invalidDestinationDistance(const int& y, const int& x, const int& destinationsPlaced);
+
+    // Gamesaving functions
+    void saveGameState();
+    void loadGameState();
 };
 
 #endif
