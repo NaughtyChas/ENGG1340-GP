@@ -17,8 +17,8 @@
 #endif
 
 // Constants
-const int MIN_HEIGHT = 25;
-const int MIN_WIDTH = 80;
+const int MIN_HEIGHT = 30;
+const int MIN_WIDTH = 115;
 
 // Constructor initializes ncurses and create main window
 Game::Game()

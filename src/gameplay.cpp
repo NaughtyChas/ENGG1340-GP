@@ -137,19 +137,27 @@ void Gameplay::initializeMap() {
     int obstaclePlaced = 0;
 
     int numObstaclesToPlace = 4;  // Default Easy
+    int numClusters = 3;
+    int clusterSize = 2; // Default Easy
+    int maxBlocksPerRow = 2; // Default Easy
     int maxObstacleLength = 5;
     int minObstacleLength = 3;
 
     if (difficultyHighlight == 1) {  // Medium
         numObstaclesToPlace = 5;
+        clusterSize = 3;
+        maxBlocksPerRow = 3;
         minObstacleLength = 7;
         maxObstacleLength = 10;
     } else if (difficultyHighlight == 2) {  // Hard
         numObstaclesToPlace = 5;
+        clusterSize = 4;
+        maxBlocksPerRow = 4;
         minObstacleLength = 8;
         maxObstacleLength = 12;
     }
 
+    // Stripes placement
     int maxPlacementAttempts = map_size * map_size * 2;  // Limit attempts
     int placementAttempts = 0;
 
@@ -187,6 +195,84 @@ void Gameplay::initializeMap() {
             }
 
             obstaclePlaced++;
+        }
+    }
+
+    // Blocks placement
+    int clustersPlaced = 0;
+    int maxClusterAttempts = map_size * map_size;
+    int clusterAttempts = 0;
+
+    // Modified approach for cluster generation
+    while (clustersPlaced < numClusters && clusterAttempts < maxClusterAttempts) {
+        clusterAttempts++;
+        
+        // Select a random starting position for this cluster
+        int startY = (rand() % (map_size - clusterSize - 2)) + 1;
+        int startX = (rand() % (map_size - clusterSize - 2)) + 1;
+        
+        // First, check if the entire area is valid for a cluster
+        // We only need one position in the entire cluster area to pass isValidObstacle
+        // This ensures clusters have space between them, but can be packed internally
+        bool validClusterArea = false;
+        for (int dy = 0; dy < clusterSize && !validClusterArea; dy++) {
+            for (int dx = 0; dx < clusterSize && !validClusterArea; dx++) {
+                int y = startY + dy;
+                int x = startX + dx;
+                if (isValidObstacle(y, x)) {
+                    validClusterArea = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!validClusterArea) continue;
+        
+        // Now check if the area is free of other obstacles using isOccupiedOrProtected
+        bool canPlaceCluster = true;
+        for (int dy = 0; dy < clusterSize && canPlaceCluster; dy++) {
+            for (int dx = 0; dx < clusterSize && canPlaceCluster; dx++) {
+                int y = startY + dy;
+                int x = startX + dx;
+                if (isOccupiedOrProtected(y, x)) {
+                    canPlaceCluster = false;
+                }
+            }
+        }
+        
+        if (canPlaceCluster) {
+            // Place obstacles in this cluster - skip individual isValidObstacle checks
+            bool placedAnyBlocks = false;
+            
+            // Generate the pattern for this cluster
+            for (int dy = 0; dy < clusterSize; dy++) {
+                // Decide how many blocks to place in this row
+                int blocksInRow = 1 + (rand() % maxBlocksPerRow);
+                blocksInRow = std::min(blocksInRow, clusterSize);
+                
+                // Generate positions for the blocks
+                std::vector<int> positions;
+                for (int i = 0; i < clusterSize; i++) {
+                    positions.push_back(i);
+                }
+                // Shuffle to randomize position selection
+                std::random_shuffle(positions.begin(), positions.end());
+                
+                // Place blocks directly without checking isValidObstacle again
+                for (int b = 0; b < blocksInRow; b++) {
+                    int y = startY + dy;
+                    int x = startX + positions[b];
+                    
+                    if (!isOccupiedOrProtected(y, x)) {
+                        mapGrid[y][x] = '#';
+                        placedAnyBlocks = true;
+                    }
+                }
+            }
+            
+            if (placedAnyBlocks) {
+                clustersPlaced++;
+            }
         }
     }
 
