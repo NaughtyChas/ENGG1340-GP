@@ -2,7 +2,7 @@
 
 #include <ncurses.h>
 #include <string.h>
-
+#include <fstream>
 #include <algorithm>
 #include <locale>
 #include <string>
@@ -23,10 +23,11 @@ const int MIN_WIDTH = 80;
 // Constructor initializes ncurses and create main window
 Game::Game()
     : menuHighlight(0),
-      menuItems{"New Game", "Stats", "Exit"},
+      menuItems{"New Game", "Load Game", "Exit"},
       current_state(GameState::MAIN_MENU),
       difficultyHighlight(0),
-      difficultyItems{"Easy", "Medium", "Hard"} {
+      difficultyItems{"Easy", "Medium", "Hard"},
+      isNewGame(false) {
 #ifdef _WIN32
     // Get the console window handle and maximize it
     HWND consoleWindow = GetConsoleWindow();
@@ -60,6 +61,13 @@ Game::Game()
 
 // Destructor
 Game::~Game() {
+    // Check if save file exists and delete it
+    if (std::remove("savegame.txt") == 0) {
+        // File successfully deleted
+    } else {
+        // File might not exist
+    }
+
     delwin(mainWindow);
     endwin();
 }
@@ -449,10 +457,10 @@ void Game::waitForResize() {
     }
 }
 
-void Game::newGame(const int difficultyHighlight) {
+void Game::newGame(const int difficultyHighlight, bool isNewGame) {
     // TODO: Initialize game state based on difficulty (map size, packages, etc.)
     // TODO: Enter the actual game loop here (or elsewhere, I might be reconstructing it soon)
-    Gameplay gameplay(difficultyHighlight, current_state);
+    Gameplay gameplay(difficultyHighlight, current_state, isNewGame);
     gameplay.run();
 }
 
@@ -488,6 +496,21 @@ void Game::run() {
             continue;
         }
 
+        // Special handling for LOAD_GAME
+        if (current_state == GameState::LOAD_GAME) {
+            isNewGame = false;
+            newGame(difficultyHighlight, isNewGame);
+            
+            clear();
+            refresh();
+            werase(mainWindow);
+            box(mainWindow, 0, 0);
+            displayMenu(); // Force redraw menu
+            wrefresh(mainWindow);
+            
+            continue;  // Skip to next iteration with updated state
+        }
+
         // Display based on State
         switch (current_state) {
             case GameState::MAIN_MENU:
@@ -496,10 +519,10 @@ void Game::run() {
             case GameState::DIFFICULTY_SELECT:
                 displayDifficultyMenu();
                 break;
-            case GameState::STATS:
-                displayStats();
+            case GameState::LOAD_GAME:
+                isNewGame = false;
+                newGame(difficultyHighlight, isNewGame);
                 break;
-            // Add cases for IN_GAME, GAME_OVER etc. later
             default:
                 // Shouldn't happen but just in case
                 displayContent("Error: Unknown game state!");
@@ -508,29 +531,21 @@ void Game::run() {
         }
 
         // Input Handling - Only process input if not already handled by the display function (like
-        // displayStats)
-        if (current_state != GameState::STATS) {
-            choice = wgetch(mainWindow);  // Get input
+        choice = wgetch(mainWindow);  // Get input
 
-            // State-Specific Input Processing
-            switch (current_state) {
-                case GameState::MAIN_MENU:
-                    handleMainMenuInput(choice);
-                    break;
-                case GameState::DIFFICULTY_SELECT:
-                    handleDifficultyInput(choice);
-                    break;
-                    // Add cases for other states
-            }
-        } else {
-            // If stats were displayed, return to main menu
-            current_state = GameState::MAIN_MENU;
+        // State-Specific Input Processing
+        switch (current_state) {
+            case GameState::MAIN_MENU:
+                handleMainMenuInput(choice);
+                break;
+            case GameState::DIFFICULTY_SELECT:
+                handleDifficultyInput(choice);
+                break;
         }
     }
 }
 
 // Input Handlers
-
 void Game::handleMainMenuInput(int choice) {
     switch (choice) {
         case KEY_UP:
@@ -544,11 +559,27 @@ void Game::handleMainMenuInput(int choice) {
             if (menuHighlight == 0) {  // "Start" selected
                 current_state = GameState::DIFFICULTY_SELECT;
                 difficultyHighlight = 0;      // Reset difficulty selection highlight
-            } else if (menuHighlight == 1) {  // "Stats" selected
-                current_state = GameState::STATS;
-            } else if (menuHighlight == 2) {  // "Exit" selected
-                current_state = GameState::EXITING;
-            }
+            } else if (menuHighlight == 1) {  // "Load Game" selected
+                // Check if save file exists first
+                std::ifstream saveFile("savegame.txt");
+                if (saveFile.good()) {
+                    // File exists, try to read difficulty
+                    int savedDifficulty;
+                    if (saveFile >> savedDifficulty) {
+                        difficultyHighlight = savedDifficulty;  // Set correct difficulty
+                        isNewGame = false;  // Mark as loading a game
+                        saveFile.close();
+                        current_state = GameState::LOAD_GAME;
+                    } else {
+                        saveFile.close();
+                        displayContent("Save file is corrupted!");
+                    }
+                } else {
+                    displayContent("No saved game found!");
+                }
+                } else if (menuHighlight == 2) {  // "Exit" selected
+                    current_state = GameState::EXITING;
+                }
             break;
         // KEY_RESIZE is handled globally in run()
         default:
@@ -568,7 +599,8 @@ void Game::handleDifficultyInput(int choice) {
         case '\n':
         case KEY_ENTER:
             // Pass the selected difficulty index (0=Easy, 1=Medium, 2=Hard)
-            newGame(difficultyHighlight);
+            isNewGame = true; // Reset game
+            newGame(difficultyHighlight, isNewGame);
             // newGame currently sets state back to MAIN_MENU.
             // Later, it will set state to IN_GAME.
             break;

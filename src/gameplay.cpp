@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 #include "../include/game.h"
 
@@ -144,9 +145,9 @@ void Gameplay::initializeMap() {
         minObstacleLength = 7;
         maxObstacleLength = 10;
     } else if (difficultyHighlight == 2) {  // Hard
-        numObstaclesToPlace = 6;
-        minObstacleLength = 10;
-        maxObstacleLength = 15;
+        numObstaclesToPlace = 5;
+        minObstacleLength = 8;
+        maxObstacleLength = 12;
     }
 
     int maxPlacementAttempts = map_size * map_size * 2;  // Limit attempts
@@ -293,7 +294,7 @@ void Gameplay::initializeMap() {
 }
 
 // Constructor initializes windows based on difficulty
-Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
+Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state, bool isNewGame)
     : difficultyHighlight(difficultyHighlight),
       current_state(current_state),
       map_size(0),
@@ -344,6 +345,20 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
             break;
     }
 
+    if (isNewGame) {
+        // Initialize as a new game
+        roundNumber = 1;
+        currentStamina = 200;
+        maxStamina = 200;
+        staminaAtRoundStart = 200;
+        totalScore = 0;
+        lastRoundStepScore = 0;
+        lastRoundTimeScore = 0;
+    } else {
+        // Load from save file
+        loadGameState();
+    }
+
     hasPackage.resize(num_pkg, false);
 
     // Initialize the map grid
@@ -376,6 +391,9 @@ Gameplay::~Gameplay() {
     delwin(staminaWin);
     delwin(historyWin);
     delwin(packageWin);
+
+    clear();
+    refresh();
 }
 
 void Gameplay::resizeWindows() {
@@ -694,8 +712,15 @@ void Gameplay::handleInput(int ch) {
 
         case 27:  // ESC
             if (displayQuitOptions()) {
+                saveGameState(); // Save game data before quitting
                 addHistoryMessage("Exiting to main menu...");
+                
+                clear();
+                refresh();
+                
                 current_state = GameState::MAIN_MENU;
+
+                return;
             } else {
                 addHistoryMessage("Continuing game...");
             }
@@ -917,9 +942,11 @@ void Gameplay::run() {
 
         // Check if state changed
         if (current_state == GameState::MAIN_MENU) {
+            clear();
+            refresh();
             break;
         }
-        napms(50);
+        napms(30);
     }
 }
 
@@ -1520,4 +1547,84 @@ bool Gameplay::displayQuitOptions() {
     refresh();
     
     return selectedYes;
+}
+
+void Gameplay::saveGameState() {
+    std::ofstream saveFile("savegame.txt");
+    if (saveFile.is_open()) {
+        // Save essential game variables
+        saveFile << difficultyHighlight << std::endl;
+        saveFile << roundNumber << std::endl;
+        saveFile << totalScore << std::endl;
+        saveFile << lastRoundStepScore << std::endl;
+        saveFile << lastRoundTimeScore << std::endl;
+        saveFile << currentStamina << std::endl;
+        saveFile << maxStamina << std::endl;
+        saveFile.close();
+        addHistoryMessage("Game saved successfully.");
+    } else {
+        addHistoryMessage("Failed to save game.");
+    }
+}
+
+void Gameplay::loadGameState() {
+    std::ifstream saveFile("savegame.txt");
+    if (saveFile.is_open()) {
+        int savedDifficulty;
+        saveFile >> savedDifficulty;
+        
+        // Only load if difficulty matches or set proper difficulty
+        difficultyHighlight = savedDifficulty;
+        
+        saveFile >> roundNumber;
+        saveFile >> totalScore;
+        saveFile >> lastRoundStepScore;
+        saveFile >> lastRoundTimeScore;
+        saveFile >> currentStamina;
+        saveFile >> maxStamina;
+        
+        staminaAtRoundStart = currentStamina;
+        saveFile.close();
+        
+        // Update difficulty-dependent settings
+        switch (difficultyHighlight) {
+            case 0:
+                diff_str = "Easy";
+                map_size = 15;  // Adjust in future
+                num_obs = 5;
+                num_pkg = 3;
+                break;
+            case 1:  // Medium
+                diff_str = "Medium";
+                map_size = 20;  // Same above
+                num_obs = 6;
+                num_pkg = 4;
+                break;
+            case 2:  // Hard
+                diff_str = "Hard";
+                map_size = 25;
+                num_obs = 7;
+                num_pkg = 5;
+                break;
+            default:
+                diff_str = "Unknown";
+                map_size = 15;
+                num_obs = 5;
+                num_pkg = 3;
+                break;
+        }
+        
+        addHistoryMessage("Game loaded successfully.");
+        addHistoryMessage("Continuing from Round " + std::to_string(roundNumber));
+    } else {
+        // If loading fails, start a new game
+        addHistoryMessage("No saved game found. Starting new game.");
+        roundNumber = 1;
+        currentStamina = 200;
+        maxStamina = 200;
+        staminaAtRoundStart = 200;
+        totalScore = 0;
+        lastRoundStepScore = 0;
+        lastRoundTimeScore = 0;
+    }
 }
