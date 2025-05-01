@@ -70,8 +70,8 @@ private:
     void displayTime();
     void displayLegend();
     void displayStaminaBar();
-    // Add methods for handling input, updating game state...
-    // TBD
+    bool displayQuitOptions();
+
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);

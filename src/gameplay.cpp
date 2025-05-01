@@ -693,9 +693,13 @@ void Gameplay::handleInput(int ch) {
             break;
 
         case 27:  // ESC
-            addHistoryMessage("Exiting to main menu...");
-            current_state = GameState::MAIN_MENU;
-            break;
+            if (displayQuitOptions()) {
+                addHistoryMessage("Exiting to main menu...");
+                current_state = GameState::MAIN_MENU;
+            } else {
+                addHistoryMessage("Continuing game...");
+            }
+        break;
         case KEY_RESIZE:
             addHistoryMessage("Terminal resized.");
             clear();
@@ -1413,4 +1417,107 @@ void Gameplay::displayPopupMessage(const std::string& title,
     // Touch the main screen and refresh to redraw the underlying game state cleanly
     touchwin(stdscr);
     refresh();
+}
+
+bool Gameplay::displayQuitOptions() {
+    // Padding
+    const int horizontalPadding = 3;
+    const int verticalPadding = 1;
+    
+    // --- Calculate window dimensions ---
+    std::string title = "Quit Game";
+    std::string message = "Are you sure you want to quit?";
+    std::string option1 = "Yes";
+    std::string option2 = "No";
+    
+    int maxTextLength = std::max({title.length(), message.length(), 
+                                  option1.length() + option2.length() + 4});
+    
+    int popupHeight = 7; // Title, message, options, borders
+    int popupWidth = 1 + horizontalPadding + maxTextLength + horizontalPadding + 1;
+    
+    // Ensure dimensions are valid
+    popupWidth = std::max(30, popupWidth);
+
+    int popupY = (height - popupHeight) / 2;
+    int popupX = (width - popupWidth) / 2;
+    
+    WINDOW* popupWin = newwin(popupHeight, popupWidth, popupY, popupX);
+    keypad(popupWin, TRUE);
+    box(popupWin, 0, 0);
+    
+    // Record time when the pause started
+    auto pauseStartTime = std::chrono::steady_clock::now();
+    
+    // --- Display Title (Centered) ---
+    int titleX = (popupWidth - static_cast<int>(title.length())) / 2;
+    wattron(popupWin, A_BOLD);
+    mvwprintw(popupWin, 1, titleX, "%s", title.c_str());
+    wattroff(popupWin, A_BOLD);
+    
+    // Display Message
+    int messageX = (popupWidth - static_cast<int>(message.length())) / 2;
+    mvwprintw(popupWin, 3, messageX, "%s", message.c_str());
+    
+    // Options
+    bool selectedYes = true; // Default to Yes
+    int optionsY = 5;
+    
+    // Input loop for handling selection
+    nodelay(popupWin, FALSE); // Wait for input in this window
+    
+    bool madeSelection = false;
+    while (!madeSelection) {
+        // Calculate positions for yes/no
+        int totalOptionsWidth = option1.length() + option2.length() + 4;
+        int optionsStartX = (popupWidth - totalOptionsWidth) / 2;
+        
+        int yesX = optionsStartX;
+        int noX = yesX + option1.length() + 4;
+        
+        // Draw Yes option
+        if (selectedYes) wattron(popupWin, A_REVERSE);
+        mvwprintw(popupWin, optionsY, yesX, "%s", option1.c_str());
+        if (selectedYes) wattroff(popupWin, A_REVERSE);
+        
+        // Draw No option
+        if (!selectedYes) wattron(popupWin, A_REVERSE);
+        mvwprintw(popupWin, optionsY, noX, "%s", option2.c_str());
+        if (!selectedYes) wattroff(popupWin, A_REVERSE);
+        
+        wrefresh(popupWin);
+        
+        // Get input
+        int ch = wgetch(popupWin);
+        switch (ch) {
+            case KEY_LEFT:
+                selectedYes = true;
+                break;
+            case KEY_RIGHT:
+                selectedYes = false;
+                break;
+            case '\n':  // Enter
+            case KEY_ENTER:
+                madeSelection = true;
+                break;
+            case 27:  // ESC
+                selectedYes = false;
+                madeSelection = true;
+                break;
+        }
+    }
+    
+    nodelay(popupWin, TRUE); // Restore non-blocking
+    delwin(popupWin);
+    
+    // Adjust the startTime by the duration spent in this dialog
+    auto pauseEndTime = std::chrono::steady_clock::now();
+    auto pauseDuration = pauseEndTime - pauseStartTime;
+    startTime += pauseDuration;
+    
+    // Redraw the screen
+    touchwin(stdscr);
+    refresh();
+    
+    return selectedYes;
 }
