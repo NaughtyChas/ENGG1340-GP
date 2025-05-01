@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 #include <fstream>
+#include <random>
 
 #include "../include/game.h"
 
@@ -41,6 +42,10 @@ void Gameplay::initializeMap() {
 
     // Seed
     srand(time(0));
+
+    // Create a random number engine for std::shuffle
+    std::random_device rd;
+    std::mt19937 g(rd());
 
     // Reset Delivered Count for New Round
     packagesDelivered = 0;
@@ -251,7 +256,7 @@ void Gameplay::initializeMap() {
                     positions.push_back(i);
                 }
                 // Shuffle to randomize position selection
-                std::random_shuffle(positions.begin(), positions.end());
+                std::shuffle(positions.begin(), positions.end(), g);
                 
                 // Place blocks directly without checking isValidObstacle again
                 for (int b = 0; b < blocksInRow; b++) {
