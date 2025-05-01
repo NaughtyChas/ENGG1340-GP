@@ -7,14 +7,14 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
+#include <random>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
-#include <fstream>
-#include <random>
 
 #include "../include/game.h"
 
@@ -143,8 +143,8 @@ void Gameplay::initializeMap() {
 
     int numObstaclesToPlace = 4;  // Default Easy
     int numClusters = 3;
-    int clusterSize = 2; // Default Easy
-    int maxBlocksPerRow = 2; // Default Easy
+    int clusterSize = 2;      // Default Easy
+    int maxBlocksPerRow = 2;  // Default Easy
     int maxObstacleLength = 5;
     int minObstacleLength = 3;
 
@@ -210,11 +210,11 @@ void Gameplay::initializeMap() {
 
     while (clustersPlaced < numClusters && clusterAttempts < maxClusterAttempts) {
         clusterAttempts++;
-        
+
         // Select a random starting position for this cluster
         int startY = (rand() % (map_size - clusterSize - 2)) + 1;
         int startX = (rand() % (map_size - clusterSize - 2)) + 1;
-        
+
         // Check if the entire area is valid for a cluster
         bool validClusterArea = false;
         for (int dy = 0; dy < clusterSize && !validClusterArea; dy++) {
@@ -227,9 +227,10 @@ void Gameplay::initializeMap() {
                 }
             }
         }
-        
-        if (!validClusterArea) continue;
-        
+
+        if (!validClusterArea)
+            continue;
+
         // Check if the area is free of other obstacles
         bool canPlaceCluster = true;
         for (int dy = 0; dy < clusterSize && canPlaceCluster; dy++) {
@@ -241,35 +242,35 @@ void Gameplay::initializeMap() {
                 }
             }
         }
-        
+
         if (canPlaceCluster) {
             // Skip individual isValidObstacle checks
             bool placedAnyBlocks = false;
-            
+
             // Generate pattern
             for (int dy = 0; dy < clusterSize; dy++) {
                 int blocksInRow = 1 + (rand() % maxBlocksPerRow);
                 blocksInRow = std::min(blocksInRow, clusterSize);
-                
+
                 std::vector<int> positions;
                 for (int i = 0; i < clusterSize; i++) {
                     positions.push_back(i);
                 }
                 // Shuffle to randomize position selection
                 std::shuffle(positions.begin(), positions.end(), g);
-                
+
                 // Place blocks directly without checking isValidObstacle again
                 for (int b = 0; b < blocksInRow; b++) {
                     int y = startY + dy;
                     int x = startX + positions[b];
-                    
+
                     if (!isOccupiedOrProtected(y, x)) {
                         mapGrid[y][x] = '#';
                         placedAnyBlocks = true;
                     }
                 }
             }
-            
+
             if (placedAnyBlocks) {
                 clustersPlaced++;
             }
@@ -798,19 +799,19 @@ void Gameplay::handleInput(int ch) {
 
         case 27:  // ESC
             if (displayQuitOptions()) {
-                saveGameState(); // Save game data before quitting
+                saveGameState();  // Save game data before quitting
                 addHistoryMessage("Exiting to main menu...");
-                
+
                 clear();
                 refresh();
-                
+
                 current_state = GameState::MAIN_MENU;
 
                 return;
             } else {
                 addHistoryMessage("Continuing game...");
             }
-        break;
+            break;
         case KEY_RESIZE:
             addHistoryMessage("Terminal resized.");
             clear();
@@ -1531,70 +1532,74 @@ bool Gameplay::displayQuitOptions() {
     // Padding
     const int horizontalPadding = 3;
     const int verticalPadding = 1;
-    
+
     // --- Calculate window dimensions ---
     std::string title = "Quit Game";
     std::string message = "Are you sure you want to quit?";
     std::string option1 = "Yes";
     std::string option2 = "No";
-    
-    int maxTextLength = std::max({title.length(), message.length(), 
-                                  option1.length() + option2.length() + 4});
-    
-    int popupHeight = 7; // Title, message, options, borders
+
+    int maxTextLength =
+        std::max({title.length(), message.length(), option1.length() + option2.length() + 4});
+
+    int popupHeight = 7;  // Title, message, options, borders
     int popupWidth = 1 + horizontalPadding + maxTextLength + horizontalPadding + 1;
-    
+
     // Ensure dimensions are valid
     popupWidth = std::max(30, popupWidth);
 
     int popupY = (height - popupHeight) / 2;
     int popupX = (width - popupWidth) / 2;
-    
+
     WINDOW* popupWin = newwin(popupHeight, popupWidth, popupY, popupX);
     keypad(popupWin, TRUE);
     box(popupWin, 0, 0);
-    
+
     // Record time when the pause started
     auto pauseStartTime = std::chrono::steady_clock::now();
-    
+
     // --- Display Title (Centered) ---
     int titleX = (popupWidth - static_cast<int>(title.length())) / 2;
     wattron(popupWin, A_BOLD);
     mvwprintw(popupWin, 1, titleX, "%s", title.c_str());
     wattroff(popupWin, A_BOLD);
-    
+
     // Display Message
     int messageX = (popupWidth - static_cast<int>(message.length())) / 2;
     mvwprintw(popupWin, 3, messageX, "%s", message.c_str());
-    
+
     // Options
-    bool selectedYes = true; // Default to Yes
+    bool selectedYes = true;  // Default to Yes
     int optionsY = 5;
-    
+
     // Input loop for handling selection
-    nodelay(popupWin, FALSE); // Wait for input in this window
-    
+    nodelay(popupWin, FALSE);  // Wait for input in this window
+
     bool madeSelection = false;
     while (!madeSelection) {
         // Calculate positions for yes/no
         int totalOptionsWidth = option1.length() + option2.length() + 4;
         int optionsStartX = (popupWidth - totalOptionsWidth) / 2;
-        
+
         int yesX = optionsStartX;
         int noX = yesX + option1.length() + 4;
-        
+
         // Draw Yes option
-        if (selectedYes) wattron(popupWin, A_REVERSE);
+        if (selectedYes)
+            wattron(popupWin, A_REVERSE);
         mvwprintw(popupWin, optionsY, yesX, "%s", option1.c_str());
-        if (selectedYes) wattroff(popupWin, A_REVERSE);
-        
+        if (selectedYes)
+            wattroff(popupWin, A_REVERSE);
+
         // Draw No option
-        if (!selectedYes) wattron(popupWin, A_REVERSE);
+        if (!selectedYes)
+            wattron(popupWin, A_REVERSE);
         mvwprintw(popupWin, optionsY, noX, "%s", option2.c_str());
-        if (!selectedYes) wattroff(popupWin, A_REVERSE);
-        
+        if (!selectedYes)
+            wattroff(popupWin, A_REVERSE);
+
         wrefresh(popupWin);
-        
+
         // Get input
         int ch = wgetch(popupWin);
         switch (ch) {
@@ -1614,19 +1619,19 @@ bool Gameplay::displayQuitOptions() {
                 break;
         }
     }
-    
-    nodelay(popupWin, TRUE); // Restore non-blocking
+
+    nodelay(popupWin, TRUE);  // Restore non-blocking
     delwin(popupWin);
-    
+
     // Adjust the startTime by the duration spent in this dialog
     auto pauseEndTime = std::chrono::steady_clock::now();
     auto pauseDuration = pauseEndTime - pauseStartTime;
     startTime += pauseDuration;
-    
+
     // Redraw the screen
     touchwin(stdscr);
     refresh();
-    
+
     return selectedYes;
 }
 
@@ -1653,20 +1658,20 @@ void Gameplay::loadGameState() {
     if (saveFile.is_open()) {
         int savedDifficulty;
         saveFile >> savedDifficulty;
-        
+
         // Only load if difficulty matches or set proper difficulty
         difficultyHighlight = savedDifficulty;
-        
+
         saveFile >> roundNumber;
         saveFile >> totalScore;
         saveFile >> lastRoundStepScore;
         saveFile >> lastRoundTimeScore;
         saveFile >> currentStamina;
         saveFile >> maxStamina;
-        
+
         staminaAtRoundStart = currentStamina;
         saveFile.close();
-        
+
         // Update difficulty-dependent settings
         switch (difficultyHighlight) {
             case 0:
@@ -1694,7 +1699,7 @@ void Gameplay::loadGameState() {
                 num_pkg = 3;
                 break;
         }
-        
+
         addHistoryMessage("Game loaded successfully.");
         addHistoryMessage("Continuing from Round " + std::to_string(roundNumber));
     } else {
