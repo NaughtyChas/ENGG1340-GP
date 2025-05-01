@@ -9,7 +9,7 @@
 enum class GameState {
     MAIN_MENU,
     DIFFICULTY_SELECT,
-    STATS,
+    LOAD_GAME,
     IN_GAME,
     EXITING
 };
@@ -30,6 +30,7 @@ private:
     GameState current_state; // Current state of the game
     int difficultyHighlight; // Currently selected difficulty option index
     std::vector<std::string> difficultyItems; // Difficulty level names
+    bool isNewGame; // For gamesaving
 
     // Display Functions
     void displayMenu();
@@ -42,7 +43,7 @@ private:
     void displayInitialResizePrompt();
 
     // Game Logic Functions
-    void newGame(int difficulty);
+    void newGame(int difficulty, bool isNewGame);
 
     // Input Handlers
     void handleMainMenuInput(int choice);

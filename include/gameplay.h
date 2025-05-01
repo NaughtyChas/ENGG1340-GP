@@ -11,7 +11,7 @@
 
 class Gameplay {
 public:
-    Gameplay(const int &difficultyHighlight, GameState &current_state);
+    Gameplay(const int &difficultyHighlight, GameState &current_state, bool isNewGame);
     ~Gameplay();
     void run();
     // Not yet implemented
@@ -70,8 +70,8 @@ private:
     void displayTime();
     void displayLegend();
     void displayStaminaBar();
-    // Add methods for handling input, updating game state...
-    // TBD
+    bool displayQuitOptions();
+
     void displayHistory();
     void displayPackages();
     void handleInput(int ch);
@@ -80,6 +80,10 @@ private:
     // Helper functions
     bool invalidPackageDistance(const int& y, const int& x, const int& i);
     bool invalidDestinationDistance(const int& y, const int& x, const int& destinationsPlaced);
+
+    // Gamesaving functions
+    void saveGameState();
+    void loadGameState();
 };
 
 #endif

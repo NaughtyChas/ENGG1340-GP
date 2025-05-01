@@ -7,7 +7,9 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
+#include <random>
 #include <set>
 #include <sstream>
 #include <string>
@@ -40,6 +42,10 @@ void Gameplay::initializeMap() {
 
     // Seed
     srand(time(0));
+
+    // Create a random number engine for std::shuffle
+    std::random_device rd;
+    std::mt19937 g(rd());
 
     // Reset Delivered Count for New Round
     packagesDelivered = 0;
@@ -136,19 +142,27 @@ void Gameplay::initializeMap() {
     int obstaclePlaced = 0;
 
     int numObstaclesToPlace = 4;  // Default Easy
+    int numClusters = 3;
+    int clusterSize = 2;      // Default Easy
+    int maxBlocksPerRow = 2;  // Default Easy
     int maxObstacleLength = 5;
     int minObstacleLength = 3;
 
     if (difficultyHighlight == 1) {  // Medium
         numObstaclesToPlace = 5;
+        clusterSize = 3;
+        maxBlocksPerRow = 3;
         minObstacleLength = 7;
         maxObstacleLength = 10;
     } else if (difficultyHighlight == 2) {  // Hard
-        numObstaclesToPlace = 6;
-        minObstacleLength = 10;
-        maxObstacleLength = 15;
+        numObstaclesToPlace = 5;
+        clusterSize = 4;
+        maxBlocksPerRow = 4;
+        minObstacleLength = 8;
+        maxObstacleLength = 12;
     }
 
+    // Stripes placement
     int maxPlacementAttempts = map_size * map_size * 2;  // Limit attempts
     int placementAttempts = 0;
 
@@ -186,6 +200,80 @@ void Gameplay::initializeMap() {
             }
 
             obstaclePlaced++;
+        }
+    }
+
+    // Blocks placement
+    int clustersPlaced = 0;
+    int maxClusterAttempts = map_size * map_size;
+    int clusterAttempts = 0;
+
+    while (clustersPlaced < numClusters && clusterAttempts < maxClusterAttempts) {
+        clusterAttempts++;
+
+        // Select a random starting position for this cluster
+        int startY = (rand() % (map_size - clusterSize - 2)) + 1;
+        int startX = (rand() % (map_size - clusterSize - 2)) + 1;
+
+        // Check if the entire area is valid for a cluster
+        bool validClusterArea = false;
+        for (int dy = 0; dy < clusterSize && !validClusterArea; dy++) {
+            for (int dx = 0; dx < clusterSize && !validClusterArea; dx++) {
+                int y = startY + dy;
+                int x = startX + dx;
+                if (isValidObstacle(y, x)) {
+                    validClusterArea = true;
+                    break;
+                }
+            }
+        }
+
+        if (!validClusterArea)
+            continue;
+
+        // Check if the area is free of other obstacles
+        bool canPlaceCluster = true;
+        for (int dy = 0; dy < clusterSize && canPlaceCluster; dy++) {
+            for (int dx = 0; dx < clusterSize && canPlaceCluster; dx++) {
+                int y = startY + dy;
+                int x = startX + dx;
+                if (isOccupiedOrProtected(y, x)) {
+                    canPlaceCluster = false;
+                }
+            }
+        }
+
+        if (canPlaceCluster) {
+            // Skip individual isValidObstacle checks
+            bool placedAnyBlocks = false;
+
+            // Generate pattern
+            for (int dy = 0; dy < clusterSize; dy++) {
+                int blocksInRow = 1 + (rand() % maxBlocksPerRow);
+                blocksInRow = std::min(blocksInRow, clusterSize);
+
+                std::vector<int> positions;
+                for (int i = 0; i < clusterSize; i++) {
+                    positions.push_back(i);
+                }
+                // Shuffle to randomize position selection
+                std::shuffle(positions.begin(), positions.end(), g);
+
+                // Place blocks directly without checking isValidObstacle again
+                for (int b = 0; b < blocksInRow; b++) {
+                    int y = startY + dy;
+                    int x = startX + positions[b];
+
+                    if (!isOccupiedOrProtected(y, x)) {
+                        mapGrid[y][x] = '#';
+                        placedAnyBlocks = true;
+                    }
+                }
+            }
+
+            if (placedAnyBlocks) {
+                clustersPlaced++;
+            }
         }
     }
 
@@ -293,7 +381,7 @@ void Gameplay::initializeMap() {
 }
 
 // Constructor initializes windows based on difficulty
-Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
+Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state, bool isNewGame)
     : difficultyHighlight(difficultyHighlight),
       current_state(current_state),
       map_size(0),
@@ -344,6 +432,20 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state)
             break;
     }
 
+    if (isNewGame) {
+        // Initialize as a new game
+        roundNumber = 1;
+        currentStamina = 200;
+        maxStamina = 200;
+        staminaAtRoundStart = 200;
+        totalScore = 0;
+        lastRoundStepScore = 0;
+        lastRoundTimeScore = 0;
+    } else {
+        // Load from save file
+        loadGameState();
+    }
+
     hasPackage.resize(num_pkg, false);
 
     // Initialize the map grid
@@ -376,6 +478,9 @@ Gameplay::~Gameplay() {
     delwin(staminaWin);
     delwin(historyWin);
     delwin(packageWin);
+
+    clear();
+    refresh();
 }
 
 void Gameplay::resizeWindows() {
@@ -693,8 +798,19 @@ void Gameplay::handleInput(int ch) {
             break;
 
         case 27:  // ESC
-            addHistoryMessage("Exiting to main menu...");
-            current_state = GameState::MAIN_MENU;
+            if (displayQuitOptions()) {
+                saveGameState();  // Save game data before quitting
+                addHistoryMessage("Exiting to main menu...");
+
+                clear();
+                refresh();
+
+                current_state = GameState::MAIN_MENU;
+
+                return;
+            } else {
+                addHistoryMessage("Continuing game...");
+            }
             break;
         case KEY_RESIZE:
             addHistoryMessage("Terminal resized.");
@@ -913,9 +1029,11 @@ void Gameplay::run() {
 
         // Check if state changed
         if (current_state == GameState::MAIN_MENU) {
+            clear();
+            refresh();
             break;
         }
-        napms(50);
+        napms(30);
     }
 }
 
@@ -1055,14 +1173,9 @@ void Gameplay::displayTime() {
     std::string timeStr = timeStream.str();
 
     // --- Display Information ---
-    int row = 1;
+    int row = 2;
     int col = 2;
     mvwprintw(timeWin, row++, col, "Elapsed: %s", timeStr.c_str());
-    row++;  // Add a blank line
-    mvwprintw(timeWin, row++, col, "Time Bonus:");
-    mvwprintw(timeWin, row++, col,
-              "  (Not Implemented)");  // Placeholder, will be implemented later
-
     wnoutrefresh(timeWin);
 }
 
@@ -1413,4 +1526,191 @@ void Gameplay::displayPopupMessage(const std::string& title,
     // Touch the main screen and refresh to redraw the underlying game state cleanly
     touchwin(stdscr);
     refresh();
+}
+
+bool Gameplay::displayQuitOptions() {
+    // Padding
+    const int horizontalPadding = 3;
+    const int verticalPadding = 1;
+
+    // --- Calculate window dimensions ---
+    std::string title = "Quit Game";
+    std::string message = "Are you sure you want to quit?";
+    std::string option1 = "Yes";
+    std::string option2 = "No";
+
+    int maxTextLength =
+        std::max({title.length(), message.length(), option1.length() + option2.length() + 4});
+
+    int popupHeight = 7;  // Title, message, options, borders
+    int popupWidth = 1 + horizontalPadding + maxTextLength + horizontalPadding + 1;
+
+    // Ensure dimensions are valid
+    popupWidth = std::max(30, popupWidth);
+
+    int popupY = (height - popupHeight) / 2;
+    int popupX = (width - popupWidth) / 2;
+
+    WINDOW* popupWin = newwin(popupHeight, popupWidth, popupY, popupX);
+    keypad(popupWin, TRUE);
+    box(popupWin, 0, 0);
+
+    // Record time when the pause started
+    auto pauseStartTime = std::chrono::steady_clock::now();
+
+    // --- Display Title (Centered) ---
+    int titleX = (popupWidth - static_cast<int>(title.length())) / 2;
+    wattron(popupWin, A_BOLD);
+    mvwprintw(popupWin, 1, titleX, "%s", title.c_str());
+    wattroff(popupWin, A_BOLD);
+
+    // Display Message
+    int messageX = (popupWidth - static_cast<int>(message.length())) / 2;
+    mvwprintw(popupWin, 3, messageX, "%s", message.c_str());
+
+    // Options
+    bool selectedYes = true;  // Default to Yes
+    int optionsY = 5;
+
+    // Input loop for handling selection
+    nodelay(popupWin, FALSE);  // Wait for input in this window
+
+    bool madeSelection = false;
+    while (!madeSelection) {
+        // Calculate positions for yes/no
+        int totalOptionsWidth = option1.length() + option2.length() + 4;
+        int optionsStartX = (popupWidth - totalOptionsWidth) / 2;
+
+        int yesX = optionsStartX;
+        int noX = yesX + option1.length() + 4;
+
+        // Draw Yes option
+        if (selectedYes)
+            wattron(popupWin, A_REVERSE);
+        mvwprintw(popupWin, optionsY, yesX, "%s", option1.c_str());
+        if (selectedYes)
+            wattroff(popupWin, A_REVERSE);
+
+        // Draw No option
+        if (!selectedYes)
+            wattron(popupWin, A_REVERSE);
+        mvwprintw(popupWin, optionsY, noX, "%s", option2.c_str());
+        if (!selectedYes)
+            wattroff(popupWin, A_REVERSE);
+
+        wrefresh(popupWin);
+
+        // Get input
+        int ch = wgetch(popupWin);
+        switch (ch) {
+            case KEY_LEFT:
+                selectedYes = true;
+                break;
+            case KEY_RIGHT:
+                selectedYes = false;
+                break;
+            case '\n':  // Enter
+            case KEY_ENTER:
+                madeSelection = true;
+                break;
+            case 27:  // ESC
+                selectedYes = false;
+                madeSelection = true;
+                break;
+        }
+    }
+
+    nodelay(popupWin, TRUE);  // Restore non-blocking
+    delwin(popupWin);
+
+    // Adjust the startTime by the duration spent in this dialog
+    auto pauseEndTime = std::chrono::steady_clock::now();
+    auto pauseDuration = pauseEndTime - pauseStartTime;
+    startTime += pauseDuration;
+
+    // Redraw the screen
+    touchwin(stdscr);
+    refresh();
+
+    return selectedYes;
+}
+
+void Gameplay::saveGameState() {
+    std::ofstream saveFile("savegame.txt");
+    if (saveFile.is_open()) {
+        // Save essential game variables
+        saveFile << difficultyHighlight << std::endl;
+        saveFile << roundNumber << std::endl;
+        saveFile << totalScore << std::endl;
+        saveFile << lastRoundStepScore << std::endl;
+        saveFile << lastRoundTimeScore << std::endl;
+        saveFile << currentStamina << std::endl;
+        saveFile << maxStamina << std::endl;
+        saveFile.close();
+        addHistoryMessage("Game saved successfully.");
+    } else {
+        addHistoryMessage("Failed to save game.");
+    }
+}
+
+void Gameplay::loadGameState() {
+    std::ifstream saveFile("savegame.txt");
+    if (saveFile.is_open()) {
+        int savedDifficulty;
+        saveFile >> savedDifficulty;
+
+        // Only load if difficulty matches or set proper difficulty
+        difficultyHighlight = savedDifficulty;
+
+        saveFile >> roundNumber;
+        saveFile >> totalScore;
+        saveFile >> lastRoundStepScore;
+        saveFile >> lastRoundTimeScore;
+        saveFile >> currentStamina;
+        saveFile >> maxStamina;
+
+        staminaAtRoundStart = currentStamina;
+        saveFile.close();
+
+        // Update difficulty-dependent settings
+        switch (difficultyHighlight) {
+            case 0:
+                diff_str = "Easy";
+                map_size = 15;  // Adjust in future
+                num_obs = 5;
+                num_pkg = 3;
+                break;
+            case 1:  // Medium
+                diff_str = "Medium";
+                map_size = 20;  // Same above
+                num_obs = 6;
+                num_pkg = 4;
+                break;
+            case 2:  // Hard
+                diff_str = "Hard";
+                map_size = 25;
+                num_obs = 7;
+                num_pkg = 5;
+                break;
+            default:
+                diff_str = "Unknown";
+                map_size = 15;
+                num_obs = 5;
+                num_pkg = 3;
+                break;
+        }
+
+        addHistoryMessage("Game loaded successfully.");
+        addHistoryMessage("Continuing from Round " + std::to_string(roundNumber));
+    } else {
+        // If loading fails, start a new game
+        addHistoryMessage("No saved game found. Starting new game.");
+        roundNumber = 1;
+        currentStamina = 200;
+        maxStamina = 200;
+        staminaAtRoundStart = 200;
+        totalScore = 0;
+        lastRoundStepScore = 0;
+        lastRoundTimeScore = 0;
+    }
 }
