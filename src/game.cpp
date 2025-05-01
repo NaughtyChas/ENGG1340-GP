@@ -2,8 +2,9 @@
 
 #include <ncurses.h>
 #include <string.h>
-#include <fstream>
+
 #include <algorithm>
+#include <fstream>
 #include <locale>
 #include <string>
 #include <vector>
@@ -500,14 +501,14 @@ void Game::run() {
         if (current_state == GameState::LOAD_GAME) {
             isNewGame = false;
             newGame(difficultyHighlight, isNewGame);
-            
+
             clear();
             refresh();
             werase(mainWindow);
             box(mainWindow, 0, 0);
-            displayMenu(); // Force redraw menu
+            displayMenu();  // Force redraw menu
             wrefresh(mainWindow);
-            
+
             continue;  // Skip to next iteration with updated state
         }
 
@@ -567,7 +568,7 @@ void Game::handleMainMenuInput(int choice) {
                     int savedDifficulty;
                     if (saveFile >> savedDifficulty) {
                         difficultyHighlight = savedDifficulty;  // Set correct difficulty
-                        isNewGame = false;  // Mark as loading a game
+                        isNewGame = false;                      // Mark as loading a game
                         saveFile.close();
                         current_state = GameState::LOAD_GAME;
                     } else {
@@ -577,9 +578,9 @@ void Game::handleMainMenuInput(int choice) {
                 } else {
                     displayContent("No saved game found!");
                 }
-                } else if (menuHighlight == 2) {  // "Exit" selected
-                    current_state = GameState::EXITING;
-                }
+            } else if (menuHighlight == 2) {  // "Exit" selected
+                current_state = GameState::EXITING;
+            }
             break;
         // KEY_RESIZE is handled globally in run()
         default:
@@ -599,7 +600,7 @@ void Game::handleDifficultyInput(int choice) {
         case '\n':
         case KEY_ENTER:
             // Pass the selected difficulty index (0=Easy, 1=Medium, 2=Hard)
-            isNewGame = true; // Reset game
+            isNewGame = true;  // Reset game
             newGame(difficultyHighlight, isNewGame);
             break;
         case 27:                                   // ESC
