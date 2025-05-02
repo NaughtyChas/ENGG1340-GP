@@ -338,7 +338,8 @@ void Game::displayDifficultyMenu() {
     mvwprintw(mainWindow, rightY++, descX, "Packages:    %s", packages.c_str());
     mvwprintw(mainWindow, rightY++, descX, "Obstacles:   %s", obstacles.c_str());
     mvwprintw(mainWindow, rightY++, descX, " ");
-    mvwprintw(mainWindow, rightY++, descX, "Stamina: %s start, +%s/lvl", stamina.c_str(), reward.c_str());
+    mvwprintw(mainWindow, rightY++, descX, "Stamina: %s start, +%s/lvl", stamina.c_str(),
+              reward.c_str());
     mvwprintw(mainWindow, rightY++, descX, "Score based on completion,");
     mvwprintw(mainWindow, rightY++, descX, "time, and packages.");
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
