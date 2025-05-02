@@ -61,6 +61,7 @@ private:
     WINDOW *packageWin;
 
     // Private Methods
+    void updateDifficultyVariables();
     void initializeMap();
     void resizeWindows();
     void displayMap();

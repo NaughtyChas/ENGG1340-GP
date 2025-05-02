@@ -299,27 +299,33 @@ void Game::displayDifficultyMenu() {
     wattron(mainWindow, COLOR_PAIR(2));
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");
 
-    std::string map_size, packages, obstacles, desc;
+    std::string map_size, packages, obstacles, desc, stamina, reward;
     switch (difficultyHighlight) {
         // EZ
         case 0:
             map_size = "15x15";
             packages = "3";
-            obstacles = "4";
+            obstacles = "6";
+            stamina = "200";
+            reward = "75";
             desc = "A gentler start.";
             break;
         // Medium
         case 1:
             map_size = "20x20";
             packages = "4";
-            obstacles = "5";
+            obstacles = "7";
+            stamina = "270";
+            reward = "100";
             desc = "A standard challenge.";
             break;
         // Hard
         case 2:
             map_size = "25x25";
             packages = "5";
-            obstacles = "6";
+            obstacles = "8";
+            stamina = "350";
+            reward = "150";
             desc = "For the seasoned courier.";
             break;
     }
@@ -332,7 +338,7 @@ void Game::displayDifficultyMenu() {
     mvwprintw(mainWindow, rightY++, descX, "Packages:    %s", packages.c_str());
     mvwprintw(mainWindow, rightY++, descX, "Obstacles:   %s", obstacles.c_str());
     mvwprintw(mainWindow, rightY++, descX, " ");
-    mvwprintw(mainWindow, rightY++, descX, "Stamina: 200 start, +50/lvl");
+    mvwprintw(mainWindow, rightY++, descX, "Stamina: %s start, +%s/lvl", stamina.c_str(), reward.c_str());
     mvwprintw(mainWindow, rightY++, descX, "Score based on completion,");
     mvwprintw(mainWindow, rightY++, descX, "time, and packages.");
     mvwprintw(mainWindow, rightY++, descX, "-------------------------");

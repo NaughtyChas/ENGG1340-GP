@@ -148,7 +148,7 @@ void Gameplay::initializeMap() {
     // Obstacle Generation
     int obstaclePlaced = 0;
 
-    int numObstaclesToPlace = 4;  // Default Easy
+    int numObstaclesToPlace = 3;  // Default Easy
     int numClusters = 3;
     int clusterSize = 2;      // Default Easy
     int maxBlocksPerRow = 2;  // Default Easy
@@ -156,7 +156,7 @@ void Gameplay::initializeMap() {
     int minObstacleLength = 3;
 
     if (difficultyHighlight == 1) {  // Medium
-        numObstaclesToPlace = 5;
+        numObstaclesToPlace = 4;
         clusterSize = 3;
         maxBlocksPerRow = 3;
         minObstacleLength = 7;
@@ -409,33 +409,6 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state, boo
       exitY(0),
       exitX(0),
       doubleStaminaCostNextMove(false) {
-    switch (difficultyHighlight) {
-        case 0:
-            diff_str = "Easy";
-            map_size = 15;  // Adjust in future
-            num_obs = 5;
-            num_pkg = 3;
-            break;
-        case 1:  // Medium
-            diff_str = "Medium";
-            map_size = 20;  // Same above
-            num_obs = 6;
-            num_pkg = 4;
-            break;
-        case 2:  // Hard
-            diff_str = "Hard";
-            map_size = 25;
-            num_obs = 7;
-            num_pkg = 5;
-            break;
-        default:
-            diff_str = "Unknown";
-            map_size = 15;
-            num_obs = 5;
-            num_pkg = 3;
-            break;
-    }
-
     if (isNewGame) {
         // Initialize as a new game
         roundNumber = 1;
@@ -445,6 +418,7 @@ Gameplay::Gameplay(const int& difficultyHighlight, GameState& current_state, boo
         totalScore = 0;
         lastRoundStepScore = 0;
         lastRoundTimeScore = 0;
+        updateDifficultyVariables();
     } else {
         // Load from save file
         loadGameState();
@@ -485,6 +459,39 @@ Gameplay::~Gameplay() {
 
     clear();
     refresh();
+}
+
+void Gameplay::updateDifficultyVariables() {
+    switch (difficultyHighlight) {
+        case 0:  // Easy
+            diff_str = "Easy";
+            map_size = 15;
+            num_obs = 5;
+            num_pkg = 3;
+            break;
+        case 1:  // Medium
+            diff_str = "Medium";
+            maxStamina = 270;
+            currentStamina = 270;
+            map_size = 20;  // Same above
+            num_obs = 6;
+            num_pkg = 4;
+            break;
+        case 2:  // Hard
+            diff_str = "Hard";
+            maxStamina = 350;
+            currentStamina = 350;
+            map_size = 25;
+            num_obs = 7;
+            num_pkg = 5;
+            break;
+        default:
+            diff_str = "Unknown";
+            map_size = 15;
+            num_obs = 5;
+            num_pkg = 3;
+            break;
+    }
 }
 
 void Gameplay::resizeWindows() {
@@ -623,7 +630,21 @@ void Gameplay::handleInput(int ch) {
                 // Check if all packages are delivered
                 if (packagesDelivered >= num_pkg) {
                     // --- Calculate Stats & Score ---
-                    int staminaReward = 50;
+                    int staminaReward;
+                    // More stamina reward for higher difficulty considering game balance
+                    switch (difficultyHighlight) {
+                        case 0:  // Easy
+                            staminaReward = 75;
+                            break;
+                        case 1:  // Medium
+                            staminaReward = 100;
+                            break;
+                        case 2:  // Hard
+                            staminaReward = 150;
+                            break;
+                        default:
+                            staminaReward = 75;
+                    }
                     int oldStamina = currentStamina;
                     int finalStamina = std::min(maxStamina, currentStamina + staminaReward);
                     int staminaUsedThisRound = std::max(0, staminaAtRoundStart - oldStamina);
@@ -875,7 +896,7 @@ void Gameplay::handleInput(int ch) {
                         // Check if player landed on any part of this station
                         if (playerY == stationY &&
                             (playerX >= stationX && playerX <= stationX + 2)) {
-                            int staminaGain = (rand() % 31) + 40;  // Ranging from 40-70
+                            int staminaGain = (rand() % 41) + 60;  // Ranging from 60-100
                             int oldStaminaBeforeGain = currentStamina;
                             currentStamina = std::min(maxStamina, currentStamina + staminaGain);
                             addHistoryMessage("Supply opened! +" + std::to_string(staminaGain) +
@@ -1550,6 +1571,10 @@ void Gameplay::displayPopupMessage(const std::string& title,
                            (popupWidth - static_cast<int>(continuePrompt.length())) / 2);
     mvwprintw(popupWin, promptY, promptX, "%s", continuePrompt.c_str());
     wrefresh(popupWin);
+
+    nodelay(popupWin, FALSE);  // Force blocking mode for popup
+    wtimeout(popupWin, -1);    // Make sure it waits for input
+
     wgetch(popupWin);
     delwin(popupWin);
 
@@ -1742,5 +1767,6 @@ void Gameplay::loadGameState() {
         totalScore = 0;
         lastRoundStepScore = 0;
         lastRoundTimeScore = 0;
+        updateDifficultyVariables();
     }
 }
