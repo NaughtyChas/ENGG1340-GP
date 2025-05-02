@@ -3,7 +3,7 @@ Title: **《Rebirth : Me Delivering Keeta in Doomsday》**
 _*Game built for ENGG1340 group project._  
 
 ## GROUP MEMBER ##
-*
+* Meng Xiangkun 3036452675
 * 
 * ZhangQi 3036292697
 * WuZijie 3036296930
@@ -18,7 +18,9 @@ _*Game built for ENGG1340 group project._
   "What the—?!"  
   Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors and rogue machines. The most precious resource? Not just food or weapons— but connection.  
   Your phone buzzes violently. Pulling it out with trembling hands, a notification flashes:  
-  _// "Packages remaining today: 3" //_  
+  
+> _// "Packages remaining today: 3" //_
+
   There is a map shown the location of packages and delivery location.  
   You look down. The uniform clings to your body— neon orange, with the Keeta logo smeared.  
   In this fractured world, every package you deliver is a thread binding humanity together: medicine for the sick, letters from lost loved ones, hope in a dying world.  
@@ -43,7 +45,36 @@ This is a text-based single-player puzzle graphics game where you navigate a pos
 ✔ High Freedom Routing – Plan your own path strategically.  
 ✔ Score Tracking – Compete for the highest historical score.  
 
+## How to run the game?
 
+The game will be built and tested on the Linux (Ubuntu) platform, so it is recommended to play this game on a Linux machine. Steps are:
+
+1. Cloning this repository to your machine:
+
+`git clone git@github.com:NaughtyChas/ENGG1340-GP.git`
+
+2. Enter this project's  directory:
+
+`cd ENGG1340-GP`
+
+3. Build the game:
+
+`make`
+
+If you have built the game before, and something happends so you want to re-build the game, run the following command to clean the build executable:
+
+`make clean`
+
+4. Run the game. The game executable can be found in the `bin` directory under the root directory. Run the game using this following command:
+
+`./bin/main`
+
+If you are running on the Windows platform, please head to the [GitHub Actions](https://github.com/NaughtyChas/ENGG1340-GP/actions/workflows/buildExe.yml) page to download the Windows executable.
+You can also build your own, but it is somehow complicated so I recommend downloading this from the Actions instead.
+
+> [!WARNING]
+> We don't guarantee our game can run smoothly without flaws on the Windows platform, since the package `ncurses` is for Linux.
+> However, we did add Windows support during coding and development. Suggest using Linux for the best experience.
 
 ## GAME RULES & MECHANICS ##  
 **Detailed Rule Expalnation**  
