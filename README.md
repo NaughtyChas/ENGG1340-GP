@@ -43,6 +43,8 @@ This is a text-based single-player puzzle graphics game where you navigate a pos
 ✔ High Freedom Routing – Plan your own path strategically.  
 ✔ Score Tracking – Compete for the highest historical score.  
 
+
+
 ## GAME RULES & MECHANICS ##  
 **Detailed Rule Expalnation**  
   - Players gain a certain amount of stamina at the beginning of each game, and recover a certain amount of stamina every time they pass a level.  
@@ -71,6 +73,13 @@ Starting point🚪: left middle-most grid → Ending point🚪: right middle-mos
   
 **Final Score Calculation**  
 Including the number of parcels delivered, the number of levels cleared, the time taken to clear the level, and so on (optional factor: the number of optimal paths).
+
+### Tips for Playing the Game
+  - **Route Planning**: Before starting to move, take a moment to scan the entire map. Identify the locations of supply stations, speed bumps, obstacles, packages, and the exit. Try to plan a route that minimizes the number of steps, especially when passing through speed bumps, as they double your stamina consumption per step.
+  - **Stamina Management**: Don't rush to pick up all the packages at once. Calculate how much stamina you'll need to reach the delivery locations and the exit. It might be more beneficial to pick up packages in batches, especially if there are supply stations on the way.
+  - **Use Supply Stations Wisely**: When you're near a supply station, make sure to stop and recharge your stamina. If you're low on stamina and have a long way to go, it's worth the detour to visit a supply station to avoid running out of stamina prematurely.
+  - **Difficulty Selection**: If you're new to the game, start with the "easy" mode to get familiar with the mechanics and the map layout. As you gain more experience, you can gradually increase the difficulty for a more challenging experience.
+  - **Experiment with Different Strategies**: Don't be afraid to try different approaches, such as picking up packages in a different order or taking alternative routes. Sometimes, a less obvious path might save you more stamina in the long run.
 
 ## CODING IMPLEMENTATIONS ##
 
