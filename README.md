@@ -8,7 +8,7 @@ _*Game built for ENGG1340 group project._
 * ZhangQi 3036292697
 * WuZijie 3036296930
 * Zhu Lianbi 3036296899
-*
+* Zhao Jiayu 3036451322
 
 ## GAME DESCRIPTION ##
 **Background Story**  
