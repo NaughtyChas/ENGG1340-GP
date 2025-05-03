@@ -4,7 +4,6 @@
 
 ## Group Member
 * Meng Xiangkun 3036452675
-  - Game developent, Project management
 * 
 * Zhang Qi 3036292697
 * Wu Zijie 3036296930
@@ -20,7 +19,7 @@
   Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors and rogue machines. The most precious resource? Not just food or weapons, but connection.  
   Your phone buzzes violently. Pulling it out with trembling hands, a notification flashes:  
   
-> _// "Packages remaining today: 3" //_
+> _// Packages remaining today: 3 //_
 
   There is a map shown the location of packages and delivery location.  
   You look down. The uniform clings to your body— neon orange, with the Keeta logo smeared.  
@@ -56,23 +55,33 @@ The game will be built and tested on the Linux (Ubuntu) platform, so playing thi
 
 1. Cloning this repository to your machine:
 
-`git clone git@github.com:NaughtyChas/ENGG1340-GP.git`
+```
+git clone git@github.com:NaughtyChas/ENGG1340-GP.git
+```
 
 2. Enter this project's  directory:
 
-`cd ENGG1340-GP`
+```
+cd ENGG1340-GP
+```
 
 3. Build the game:
 
-`make`
+```
+make
+```
 
 If you have built the game before, and something happens so you want to rebuild the game, run the following command to clean the build executable:
 
-`make clean`
+```
+make clean
+```
 
 4. Run the game. The game executable can be found in the `bin` directory under the root directory. Run the game using the following command:
 
-`./bin/main`
+```
+./bin/main
+```
 
 If you are running on the Windows platform, please head to the [GitHub Actions](https://github.com/NaughtyChas/ENGG1340-GP/actions/workflows/buildExe.yml) page to download the Windows executable.
 You can also build your own, but it is somehow complicated so I recommend downloading this from the Actions instead.
@@ -80,6 +89,9 @@ You can also build your own, but it is somehow complicated so I recommend downlo
 > [!WARNING]
 > We don't guarantee our game can run smoothly without flaws on the Windows platform, since the package `ncurses` is for Linux.
 > However, we did add Windows support during coding and development. Suggest using Linux for the best experience.
+> 
+> In this project we use `ncurses` to implement the Game UI, so it is crucial to use the correct resolution. 
+> The game will prompt you to maximize your terminal window at first. **For the best experience, please do resize the terminal window size to full screen before enjoy the game!**
 
 ---
 
