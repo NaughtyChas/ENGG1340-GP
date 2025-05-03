@@ -2,6 +2,8 @@
 Title: **《Rebirth : Me Delivering Keeta in Doomsday》**  
 _*Game built for ENGG1340 group project._  
 
+### [Link to 3-minute video](https://www.youtube.com/watch?v=GvVd5VqhMbE)
+
 ## GROUP MEMBER ##
 * Meng Xiangkun 3036452675
 * Song Yunzhou 3036293639
