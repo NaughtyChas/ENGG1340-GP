@@ -2,7 +2,12 @@
 
 > *Game built for ENGG1340 group project*  
 
+[Link to 3-minute video](https://www.youtube.com/watch?v=GvVd5VqhMbE)
+
+---
+
 ## Group Member
+
 * Meng Xiangkun 3036452675
 * Song Yunzhou 3036293639
 * Zhang Qi 3036292697
