@@ -140,9 +140,9 @@ Player will start at the center of the left boundary and end each round at the s
 
 | Difficulty | Map Size | No. of Packages | No. of Obstacles |
 | ---------- | -------- | --------------- | ---------------- |
-| Easy       | 15x15    | 3               | 4                |
-| Normal     | 20x20    | 4               | 5                |
-| Hard       | 25x25    | 5               | 6                |
+| Easy       | 15x15    | 3               | 6                |
+| Normal     | 20x20    | 4               | 7                |
+| Hard       | 25x25    | 5               | 8                |
 
 **Final Score Calculation**  
 The score you get will be affected by the number of stamina points used and the time taken to clear each level.
