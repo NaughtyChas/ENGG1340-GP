@@ -159,21 +159,21 @@ Every time you pass a level, the score will accumulate until game over. Then you
 ## Coding Implementations
 
 1. **Generation of Random Events**
-   - **Dynamic Map Generation** Every level's map is generated with random package/destination locations, barriers of different sizes and shapes, and supply station positions.
-   - **Random Reward System** Supply stations provide stamina boosts varying from 60 to 100.
-   - **Implementation** Traditional approach (`rand()`) to modern randomization tools (`std::shuffle`).
+   - **Dynamic Map Generation**: Every level's map is generated with random package/destination locations, barriers of different sizes and shapes, and supply station positions.
+   - **Random Reward System**: Supply stations provide stamina boosts varying from 60 to 100.
+   - **Implementation**: Traditional approach (`rand()`) to modern randomization tools (`std::shuffle`).
 2. **Data Structures For Storing Data**
-   - **Combination of STL** Uses a vector of string (`std::vector<std::string>`) to store and manipulate the game map; package locations, supply stations, and speed bumps are stored as vectors of coordinate pairs (`std::vector<std::pair<int, int>>`).
+   - **Combination of STL**: Uses a vector of string (`std::vector<std::string>`) to store and manipulate the game map; package locations, supply stations, and speed bumps are stored as vectors of coordinate pairs (`std::vector<std::pair<int, int>>`).
 3. **Dynamic Memory Management**
-   - **Adaptive Window System** All `ncurses` windows are allocated on the heap and deleted in corresponded destructors, allowing UI elements to dynamically resize based on terminal dimensions.
+   - **Adaptive Window System**: All `ncurses` windows are allocated on the heap and deleted in corresponded destructors, allowing UI elements to dynamically resize based on terminal dimensions.
 4. **File Input/Output**
-   - **Progress Saving Feature** Player progress (Difficulty level, round number, stamina, score) is saved to `savegame.txt` when exiting and retrieved by the "Load Game" option.
-   - **File Integrity Verification** Save file integrity is verified before loading and cleaned up when appropriate.
+   - **Progress Saving Feature**: Player progress (Difficulty level, round number, stamina, score) is saved to `savegame.txt` when exiting and retrieved by the "Load Game" option.
+   - **File Integrity Verification**: Save file integrity is verified before loading and cleaned up when appropriate.
 5. **Program Codes in Multiple Files**
-   - **Clean project directory** Header files (`include/`), source files (`src/`), object files (`build/`) and executable file (`bin/`) are seperated, ensuring a clean working environment.
-   - **Separate Game Classes** `main.cpp` creates `Game` instance and runs the game in few lines of code; `Game` class manages the menu system, state transitions, and program flow; `Gameplay` class handles in-game mechanics, level generation, and player actions.
+   - **Clean project directory**: Header files (`include/`), source files (`src/`), object files (`build/`) and executable file (`bin/`) are seperated, ensuring a clean working environment.
+   - **Separate Game Classes**: `main.cpp` creates `Game` instance and runs the game in few lines of code; `Game` class manages the menu system, state transitions, and program flow; `Gameplay` class handles in-game mechanics, level generation, and player actions.
 6. **Use of `ncurses`**
-   - **Multi-Window layout** Separate windows for the map, player stats, timer, controls, stamina bar, message history, and package status.
-   - **Color Coding** Different elements use distinct colors for improved readability (packages, player, obstacles, etc.).
-   - **Input Handling** Menu selections, confirmation dialogs, and game elements all respond to player input. Non-blocking input allows real-time time display regardless of user input.
-   - **Screen Management** Handles terminal resizing and ensures minimum size requirements for optimal gameplay.
+   - **Multi-Window layout**: Separate windows for the map, player stats, timer, controls, stamina bar, message history, and package status.
+   - **Color Coding**: Different elements use distinct colors for improved readability (packages, player, obstacles, etc.).
+   - **Input Handling**: Menu selections, confirmation dialogs, and game elements all respond to player input. Non-blocking input allows real-time time display regardless of user input.
+   - **Screen Management**: Handles terminal resizing and ensures minimum size requirements for optimal gameplay.
