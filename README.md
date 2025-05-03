@@ -1,22 +1,23 @@
-# ENGG1340-GP #
-Title: **《Rebirth : Me Delivering Keeta in Doomsday》**  
-_*Game built for ENGG1340 group project._  
+# 《Rebirth : Me Delivering Keeta in Doomsday》
 
-## GROUP MEMBER ##
+> *Game built for ENGG1340 group project*  
+
+## Group Member
 * Meng Xiangkun 3036452675
+  - Game developent, Project management
 * 
-* ZhangQi 3036292697
-* WuZijie 3036296930
+* Zhang Qi 3036292697
+* Wu Zijie 3036296930
 * Zhu Lianbi 3036296899
 * Zhao Jiayu 3036451322
 
-## GAME DESCRIPTION ##
-**Background Story**  
+## Game Descritption
+### Background Story  
   In the blink of an eye, the world as you knew it ended.  
   One minute, you were just a normal student, bored out of your mind in class, scrolling through your phone and ordering "Keeta Takeout". The next minute—  _BOOM_. Your brain short-circuited, and the world went black...  
   You woke up to the sound of the earth splitting open, your face pressed against cracked asphalt, the sky a sickly shade of blood-red, with strange walls and obstacles rising everywhere.  
   "What the—?!"  
-  Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors and rogue machines. The most precious resource? Not just food or weapons— but connection.  
+  Cities crumbled, governments fell, and the remnants of humanity scattered into the wastelands, fighting for survival against mutated horrors and rogue machines. The most precious resource? Not just food or weapons, but connection.  
   Your phone buzzes violently. Pulling it out with trembling hands, a notification flashes:  
   
 > _// "Packages remaining today: 3" //_
@@ -28,8 +29,10 @@ _*Game built for ENGG1340 group project._
   Your heart beats, faster and faster.  
   Move. Move! Time is running out. Every second wasted is another name crossed off the list. Your muscles burn, your lungs scream— but you must keep going.  
   Your mission? Deliver the packages against all odds— before the world collapses entirely.  
-  
-**Game Overview**  
+
+---
+
+### Game Overview  
 This is a text-based single-player puzzle graphics game where you navigate a post-apocalyptic world as a delivery courier, balancing stamina, obstacles, and strategy to complete your missions. 
   
 **Game Goals**  
@@ -45,9 +48,11 @@ This is a text-based single-player puzzle graphics game where you navigate a pos
 ✔ High Freedom Routing – Plan your own path strategically.  
 ✔ Score Tracking – Compete for the highest historical score.  
 
+---
+
 ## How to run the game?
 
-The game will be built and tested on the Linux (Ubuntu) platform, so it is recommended to play this game on a Linux machine. Steps are:
+The game will be built and tested on the Linux (Ubuntu) platform, so playing this game on a Linux machine is recommended. Steps are:
 
 1. Cloning this repository to your machine:
 
@@ -61,11 +66,11 @@ The game will be built and tested on the Linux (Ubuntu) platform, so it is recom
 
 `make`
 
-If you have built the game before, and something happends so you want to re-build the game, run the following command to clean the build executable:
+If you have built the game before, and something happens so you want to rebuild the game, run the following command to clean the build executable:
 
 `make clean`
 
-4. Run the game. The game executable can be found in the `bin` directory under the root directory. Run the game using this following command:
+4. Run the game. The game executable can be found in the `bin` directory under the root directory. Run the game using the following command:
 
 `./bin/main`
 
@@ -76,7 +81,9 @@ You can also build your own, but it is somehow complicated so I recommend downlo
 > We don't guarantee our game can run smoothly without flaws on the Windows platform, since the package `ncurses` is for Linux.
 > However, we did add Windows support during coding and development. Suggest using Linux for the best experience.
 
-## GAME RULES & MECHANICS ##  
+---
+
+## Game Rules & Mechanics  
 **Detailed Rule Expalnation**  
   - Players gain a certain amount of stamina at the beginning of each game, and recover a certain amount of stamina every time they pass a level.  
   - The player's goal is to deliver all parcels to the appropriate receiving location in each level before running out of stamina, then leave through the exit and retain as much stamina as possible until the next level!  
@@ -86,16 +93,27 @@ You can also build your own, but it is somehow complicated so I recommend downlo
   - Players can choose the difficulty (easy, medium, hard) at the beginning of each game, and the difficulty of the level will not change after the choice; the difficulty is related to the size of the map, the number of obstacles (5, 6, 7), and the number of packages.
   
 **Stamina System**
-  - Initial overall stamina: 200.  
-  - Stamina replenished after each level is cleared: 50.  
+  - Initial overall stamina is different across different diffs, which is:
+
+    |Easy|Medium|Hard|
+    |:-:|:-:|:-:|
+    |200|270|350|
+
+  - Stamina will be replenished after completing each level, which:
+
+    |Easy|Medium|Hard|
+    |:-:|:-:|:-:|
+    |+75|+100|+150|
+       
   - Stamina consumption:  
-      + No parcels：-1 per step.  
-      + With n parcels📦: -(1+n) per step.  
-      + speed bumps🚧: Double stamina cost.  
-  - supply stations🏪: +20~50 random stamina.
+      + No parcels in hand： cost 1 per step.  
+      + With n parcels📦: cost `1+n` per step.  
+      + Speed bumps🚧: Double stamina cost in the next move.  
+  - Supply stations🏪: reward `60-100` random stamina.
   
 **Difficulty & Map Generation**   
-Starting point🚪: left middle-most grid → Ending point🚪: right middle-most grid.
+Player will start at the center of the left boundary and end each round at the same y-location on the opposite boundary.
+
 | Difficulty | Map Size | No. of Packages | No. of Obstacles | 
 |------------|----------|-----------------|------------------|
 | Easy | 15x15 | 3 | 4 | 
@@ -103,7 +121,8 @@ Starting point🚪: left middle-most grid → Ending point🚪: right middle-mos
 | Hard | 25x25 | 5 | 6 |
   
 **Final Score Calculation**  
-Including the number of parcels delivered, the number of levels cleared, the time taken to clear the level, and so on (optional factor: the number of optimal paths).
+The score you get will be affected by the number of stamina points used and the time taken to clear each level.
+Every time you pass a level, the score will accumulate until game over. Then your final score will be calculated.
 
 ### Tips for Playing the Game
   - **Route Planning**: Before starting to move, take a moment to scan the entire map. Identify the locations of supply stations, speed bumps, obstacles, packages, and the exit. Try to plan a route that minimizes the number of steps, especially when passing through speed bumps, as they double your stamina consumption per step.
@@ -112,6 +131,8 @@ Including the number of parcels delivered, the number of levels cleared, the tim
   - **Difficulty Selection**: If you're new to the game, start with the "easy" mode to get familiar with the mechanics and the map layout. As you gain more experience, you can gradually increase the difficulty for a more challenging experience.
   - **Experiment with Different Strategies**: Don't be afraid to try different approaches, such as picking up packages in a different order or taking alternative routes. Sometimes, a less obvious path might save you more stamina in the long run.
 
-## CODING IMPLEMENTATIONS ##
+## Coding Implementations
+
+*Will be merged from another PR.
 
 
