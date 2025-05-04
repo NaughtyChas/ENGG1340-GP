@@ -98,7 +98,8 @@ make clean
 ./bin/main
 ```
 
-If you are running on the Windows platform, please head to the [GitHub Actions](https://github.com/NaughtyChas/ENGG1340-GP/actions/workflows/buildExe.yml) page to download the Windows executable.
+If you are running on the Windows platform, please head to the [GitHub Actions](https://github.com/NaughtyChas/ENGG1340-GP/actions/workflows/buildExe.yml) page, or [Releases](https://github.com/NaughtyChas/ENGG1340-GP/releases) to download the Windows executable.
+
 You can also build your own, but it is somehow complicated so I recommend downloading this from the Actions instead.
 
 > [!WARNING]
