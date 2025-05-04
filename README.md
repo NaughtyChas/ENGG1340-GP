@@ -68,6 +68,12 @@ The game will be built and tested on the Linux (Ubuntu) platform, so playing thi
 git clone git@github.com:NaughtyChas/ENGG1340-GP.git
 ```
 
+If you cannot clone using SSH (which is the command above), try using HTTPS instead:
+
+```
+git clone https://github.com/NaughtyChas/ENGG1340-GP.git
+```
+
 2. Enter this project's directory:
 
 ```
