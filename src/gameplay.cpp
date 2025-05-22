@@ -1314,7 +1314,7 @@ void Gameplay::displayStaminaBar() {
 
     // --- Title ---
     const char* title = " Stamina ";
-    mvwprintw(staminaWin, 0, 2, title);
+    mvwprintw(staminaWin, 0, 2, "%s", title);
 
     // --- Bar Calculation ---
     int barWidth = getmaxx(staminaWin) - 4;
@@ -1341,7 +1341,7 @@ void Gameplay::displayStaminaBar() {
     std::string staminaText = std::to_string(currentStamina) + " / " + std::to_string(maxStamina);
     int textX = getmaxx(staminaWin) - 2 - staminaText.length();
     textX = std::max(2, textX);  // Ensure it doesn't overwrite left border
-    mvwprintw(staminaWin, 1, textX, staminaText.c_str());
+    mvwprintw(staminaWin, 1, textX, "%s", staminaText.c_str());
 
     wnoutrefresh(staminaWin);
 }
@@ -1352,7 +1352,7 @@ void Gameplay::displayHistory() {
 
     // --- Title ---
     const char* title = " Gameplay History ";
-    mvwprintw(historyWin, 0, 2, title);
+    mvwprintw(historyWin, 0, 2, "%s", title);
 
     // --- Display Messages ---
     int maxLines = getmaxy(historyWin) - 2;
@@ -1370,7 +1370,7 @@ void Gameplay::displayHistory() {
         if (msg.length() > maxWidth) {
             msg.resize(maxWidth);
         }
-        mvwprintw(historyWin, currentLine++, 2, msg.c_str());
+        mvwprintw(historyWin, currentLine++, 2, "%s", msg.c_str());
     }
 
     // Example placeholder if no messages yet
