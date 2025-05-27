@@ -184,3 +184,9 @@ Every time you pass a level, the score will accumulate until game over. Then you
    - **Color Coding**: Different elements use distinct colors for improved readability (packages, player, obstacles, etc.).
    - **Input Handling**: Menu selections, confirmation dialogs, and game elements all respond to player input. Non-blocking input allows real-time time display regardless of user input.
    - **Screen Management**: Handles terminal resizing and ensures minimum size requirements for optimal gameplay.
+
+---
+
+Extra contributions from the community:
+
+Thanks @XTZ206 for applying standard practices for strings!
