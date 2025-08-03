@@ -8,12 +8,7 @@
 
 ## Group Member
 
-- Meng Xiangkun 3036452675
-- Song Yunzhou 3036293639
-- Zhang Qi 3036292697
-- Wu Zijie 3036296930
-- Zhu Lianbi 3036296899
-- Zhao Jiayu 3036451322
+*Names are removed due to privacy issues.*
 
 ## Game Descritption
 
